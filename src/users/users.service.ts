@@ -14,17 +14,13 @@ export class UsersService {
   ) {}
 
   async signup(userData: CreateUserDto) {
-    // console.log('userData', userData);
-    const hashedPassword = await bcrypt.hash(
-      userData.password,
-      parseInt(this.configService.get<string>('SALT_ROUNDS')!),
-    );
-
-    const newUser = await this.userRepo.create({
-      ...userData,
-      password: hashedPassword,
-    });
+    const newUser = await this.userRepo.create(userData);
     this.userRepo.save(newUser);
     return newUser;
+  }
+  async findByEmail(email: string) {
+    const user = await this.userRepo.findOneBy({ email });
+    console.log('user in user service', user);
+    return user;
   }
 }
