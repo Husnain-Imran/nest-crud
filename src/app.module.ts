@@ -5,6 +5,10 @@ import { UsersModule } from './users/users.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from 'node_modules/@nestjs/typeorm/dist/typeorm.module';
 import { AuthModule } from './auth/auth.module';
+import { SerializeInterceptor } from './interceptor/serializeInterceptor';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { CurrentUserInterceptor } from './interceptor/current-user.interceptor';
+import { BooksModule } from './books/books.module';
 
 @Module({
   imports: [
@@ -28,8 +32,16 @@ import { AuthModule } from './auth/auth.module';
         synchronize: true,
       }),
     }),
+    BooksModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: SerializeInterceptor,
+    },
+    { provide: APP_INTERCEPTOR, useClass: CurrentUserInterceptor },
+  ],
 })
 export class AppModule {}
