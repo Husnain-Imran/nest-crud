@@ -1,35 +1,32 @@
-import { Exclude } from 'class-transformer';
-
-import { Book } from 'src/books/entity/book.entity';
+import { User } from 'src/users/entities/user.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
-  OneToMany,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
 @Entity()
-export class User {
+export class Book {
   @PrimaryGeneratedColumn()
   id!: number;
 
   @Column()
-  name!: string;
+  title!: string;
 
   @Column()
-  email!: string;
+  author!: string;
 
   @Column()
-  @Exclude()
-  password!: string;
+  price!: number;
 
   @Column()
-  role!: string;
+  description!: string;
 
-  @OneToMany(() => Book, (book) => book.addedBy)
-  books!: Book[];
+  @ManyToOne(() => User, (user) => user.books)
+  addedBy!: User;
 
   @CreateDateColumn()
   createdAt!: Date;
