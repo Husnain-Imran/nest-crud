@@ -1,52 +1,48 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { productTypeAssigment } from '../../product-types/entities/product-type-assigmnent.entity';
 
 @Entity()
 export class Product {
-    @PrimaryGeneratedColumn("uuid")
-    id!: string 
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
-    @Column()
-    title! :string
+  @Column()
+  title!: string;
 
-    @Column({nullable:true})
-    description? : string
-    
-    
-    @Column({nullable:true})
-    vialSize? : string
+  @Column({ nullable: true })
+  description?: string;
 
-    
-    @Column({nullable:true})
-    concentration? : string
+  @Column({ nullable: true })
+  vialSize?: string;
 
-    
-    @Column({nullable:true , unique:true })
-    sku? : string
+  @Column({ nullable: true })
+  concentration?: string;
 
-    
-    @Column({nullable:true})
-    sortOrder? : number
+  @Column({ nullable: true, unique: true })
+  sku?: string;
 
-    
-    @Column()
-     isActive? : boolean
+  @Column({ nullable: true })
+  sortOrder?: number;
 
-    @Column()
-    commingSoon? : boolean
+  @Column()
+  isActive?: boolean;
 
-    @Column()
-    inventoryEnabled! : boolean
+  @Column()
+  commingSoon?: boolean;
 
-    
-    @Column()
-    basePrice! : number
+  @Column()
+  inventoryEnabled!: boolean;
 
-     @Column()
-    floorPrice! : number
-     @Column()
-    displayPrice! : number
-    @Column()
-    ceilingPrice! :number
+  @Column()
+  basePrice!: number;
 
+  @Column()
+  floorPrice!: number;
+  @Column()
+  displayPrice!: number;
+  @Column()
+  ceilingPrice!: number;
 
+  @OneToMany(() => productTypeAssigment, (assignment) => assignment.product)
+  typeAssignment!: productTypeAssigment[];
 }
