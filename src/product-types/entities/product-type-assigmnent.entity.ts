@@ -1,9 +1,9 @@
 import { Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
 import { Product } from '../../products/entities/product.entity';
-import { productType } from './product-type.entity';
+import { ProductType } from './product-type.entity';
 
 @Entity()
-export class productTypeAssigment {
+export class ProductTypeAssignment {
   @PrimaryColumn({ name: 'product_id', type: 'uuid' })
   productId!: string;
 
@@ -15,9 +15,9 @@ export class productTypeAssigment {
   @JoinColumn({ name: 'product_id' })
   product!: Product;
 
-  @ManyToOne(() => productType, (productType) => productType.productAssigment, {
+  @ManyToOne(() => ProductType, (productType) => productType.productAssigment, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'product_type_id' })
-  productType!: productType;
+  productType!: ProductType;
 }

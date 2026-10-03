@@ -1,4 +1,4 @@
-import { productType } from './entities/product-type.entity';
+import { ProductType } from './entities/product-type.entity';
 import { Injectable } from '@nestjs/common';
 import { CreateProductTypeDto } from './dto/create-product-type.dto';
 import { UpdateProductTypeDto } from './dto/update-product-type.dto';
@@ -9,13 +9,13 @@ import { searchProductTypeDto } from './dto/search-product-type.dto';
 @Injectable()
 export class ProductTypesService {
   constructor(
-    @InjectRepository(productType)
-    private productTypeRepo: Repository<productType>,
+    @InjectRepository(ProductType)
+    private ProductTypeRepo: Repository<ProductType>,
   ) {}
 
   async create(createProductTypeDto: CreateProductTypeDto) {
-    const productType = this.productTypeRepo.create(createProductTypeDto);
-    await this.productTypeRepo.save(productType);
+    const ProductType = this.ProductTypeRepo.create(createProductTypeDto);
+    await this.ProductTypeRepo.save(ProductType);
 
     return {
       message: 'Product type created successfully',
@@ -25,9 +25,9 @@ export class ProductTypesService {
   async findAll(searchProductType: searchProductTypeDto) {
     const { search, page, limit } = searchProductType;
 
-    const [items, total] = await this.productTypeRepo.findAndCount({
+    const [items, total] = await this.ProductTypeRepo.findAndCount({
       where: search ? { name: ILike(`%${search}%`) } : {},
-      order: { createAt: 'DESC' },
+      order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
     });
@@ -42,24 +42,24 @@ export class ProductTypesService {
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} productType`;
+    return `This action returns a #${id} ProductType`;
   }
 
   async update(id: string, updateProductTypeDto: UpdateProductTypeDto) {
-    const productType = await this.productTypeRepo.findOne({
+    const ProductType = await this.ProductTypeRepo.findOne({
       where: {
         id: id,
       },
     });
-    if (!productType) return 'Product type not found';
+    if (!ProductType) return 'Product type not found';
 
-    Object.assign(productType, updateProductTypeDto);
+    Object.assign(ProductType, updateProductTypeDto);
 
-    return await this.productTypeRepo.save(productType);
+    return await this.ProductTypeRepo.save(ProductType);
   }
 
   async remove(id: string) {
-    const result = await this.productTypeRepo.delete(id);
+    const result = await this.ProductTypeRepo.delete(id);
     if (result.affected === 0) {
       return 'Product does not exist';
     }

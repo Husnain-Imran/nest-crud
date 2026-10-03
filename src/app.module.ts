@@ -11,6 +11,7 @@ import { CurrentUserInterceptor } from './interceptor/current-user.interceptor';
 import { BooksModule } from './books/books.module';
 import { ProductsModule } from './products/products.module';
 import { ProductTypesModule } from './product-types/product-types.module';
+import { CategoriesModule } from './categories/categories.module';
 
 @Module({
   imports: [
@@ -37,6 +38,8 @@ import { ProductTypesModule } from './product-types/product-types.module';
     BooksModule,
     ProductsModule,
     ProductTypesModule,
+    CategoriesModule,
+    
   ],
   controllers: [AppController],
   providers: [

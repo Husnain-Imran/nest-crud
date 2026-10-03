@@ -5,11 +5,12 @@ import {
   OneToMany,
   PrimaryColumn,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
-import { productTypeAssigment } from './product-type-assigmnent.entity';
+import { ProductTypeAssignment } from './product-type-assigmnent.entity';
 
 @Entity()
-export class productType {
+export class ProductType {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
@@ -17,11 +18,14 @@ export class productType {
   name!: string;
 
   @CreateDateColumn({ name: 'created_at' })
-  createAt!: Date;
+  createdAt!: Date;
 
-  @CreateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date;
 
-  @OneToMany(() => productTypeAssigment, (assignment) => assignment.productType)
-  productAssigment!: productTypeAssigment;
+  @OneToMany(
+    () => ProductTypeAssignment,
+    (assignment) => assignment.productType,
+  )
+  productAssigment!: ProductTypeAssignment[];
 }

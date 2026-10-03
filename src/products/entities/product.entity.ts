@@ -1,5 +1,6 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { productTypeAssigment } from '../../product-types/entities/product-type-assigmnent.entity';
+import { ProductTypeAssignment } from '../../product-types/entities/product-type-assigmnent.entity';
+import { CategoryAssignment } from 'src/categories/entities/category-assigment.entity';
 
 @Entity()
 export class Product {
@@ -43,6 +44,9 @@ export class Product {
   @Column()
   ceilingPrice!: number;
 
-  @OneToMany(() => productTypeAssigment, (assignment) => assignment.product)
-  typeAssignment!: productTypeAssigment[];
+  @OneToMany(() => ProductTypeAssignment, (assignment) => assignment.product)
+  typeAssignment!: ProductTypeAssignment[];
+
+  @OneToMany(() => CategoryAssignment, (assignment) => assignment.product)
+  assigments!: CategoryAssignment[];
 }
