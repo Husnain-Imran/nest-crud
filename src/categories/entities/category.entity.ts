@@ -4,6 +4,7 @@ import {
   Entity,
   OneToMany,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { CategoryAssignment } from './category-assigment.entity';
 
@@ -14,15 +15,13 @@ export class Category {
 
   @Column()
   name!: string;
-
+ 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 
-  @CreateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date;
 
-  @OneToMany(() => CategoryAssignment, (assigment) => assigment.category, {
-    onDelete: 'CASCADE',
-  })
+  @OneToMany(() => CategoryAssignment, (assigment) => assigment.category)
   assigments!: CategoryAssignment[];
 }

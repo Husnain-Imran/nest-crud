@@ -39,7 +39,6 @@ import { CategoriesModule } from './categories/categories.module';
     ProductsModule,
     ProductTypesModule,
     CategoriesModule,
-    
   ],
   controllers: [AppController],
   providers: [

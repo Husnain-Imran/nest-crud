@@ -18,8 +18,6 @@ export class ProductsService {
 
   update(id: number, updateProductDto: UpdateProductDto) {
 
-    let a =1
-    let b =9
 
     return `This action updates a #${id} product`;
 
