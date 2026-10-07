@@ -1,6 +1,8 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { ProductTypeAssignment } from '../../product-types/entities/product-type-assigmnent.entity';
 import { CategoryAssignment } from 'src/categories/entities/category-assigment.entity';
+import { Image } from './Image.entity';
+import { Discount } from './discount.entity';
 
 @Entity()
 export class Product {
@@ -49,4 +51,12 @@ export class Product {
 
   @OneToMany(() => CategoryAssignment, (assignment) => assignment.product)
   assigments!: CategoryAssignment[];
+
+  @OneToMany(() => Image, (image) => image.product, {
+    onDelete: 'CASCADE',
+  })
+  images!: Image[];
+
+  @OneToMany(() => Discount, (discount) => discount.product)
+  discounts!: Discount[];
 }
