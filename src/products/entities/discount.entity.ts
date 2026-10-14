@@ -48,11 +48,10 @@ export class Discount {
   @JoinColumn({ name: 'product_id' })
   product!: Product;
 
-  @CreateDateColumn({ name: 'created_at', type: 'timestamp with time zone' })
+  @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
   @UpdateDateColumn({
     name: 'updated_at',
-    type: 'timestamp with time zone',
     nullable: true,
   })
   updatedAt?: Date;

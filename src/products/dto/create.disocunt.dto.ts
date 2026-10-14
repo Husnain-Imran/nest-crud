@@ -17,7 +17,7 @@ export class CreateDiscountDto {
   @IsOptional()
   @IsInt()
   @Min(1)
-  minimumDiscountQuantity?: number;
+  minimumDiscountQuantity: number = 1;
 
   @ValidateIf((o) => o.noUpperLimit === false)
   @IsInt()
