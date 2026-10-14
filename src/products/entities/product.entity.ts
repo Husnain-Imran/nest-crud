@@ -1,8 +1,16 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { ProductTypeAssignment } from '../../product-types/entities/product-type-assigmnent.entity';
 import { CategoryAssignment } from 'src/categories/entities/category-assigment.entity';
 import { Image } from './Image.entity';
 import { Discount } from './discount.entity';
+import { User } from 'src/users/entities/user.entity';
 
 @Entity()
 export class Product {
@@ -59,4 +67,8 @@ export class Product {
 
   @OneToMany(() => Discount, (discount) => discount.product)
   discounts!: Discount[];
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'created_by' })
+  createdBy?: User;
 }
