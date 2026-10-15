@@ -36,9 +36,6 @@ export class Discount {
   })
   discountAmount!: number;
 
-  @Column({ type: 'float' })
-  discountPercentage!: number;
-
   @Column({ name: 'product_id', type: 'uuid' })
   productId!: string;
 

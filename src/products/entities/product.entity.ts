@@ -11,6 +11,7 @@ import { CategoryAssignment } from 'src/categories/entities/category-assigment.e
 import { Image } from './Image.entity';
 import { Discount } from './discount.entity';
 import { User } from 'src/users/entities/user.entity';
+import { decimalTransformer } from '../helpers/product.helper';
 
 @Entity()
 export class Product {
@@ -39,19 +40,39 @@ export class Product {
   isActive?: boolean;
 
   @Column()
-  commingSoon?: boolean;
+  comingSoon?: boolean;
 
   @Column()
   inventoryEnabled!: boolean;
 
-  @Column()
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   basePrice!: number;
 
-  @Column()
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   floorPrice!: number;
-  @Column()
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   displayPrice!: number;
-  @Column()
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   ceilingPrice!: number;
 
   @OneToMany(() => ProductTypeAssignment, (assignment) => assignment.product)
@@ -60,9 +81,7 @@ export class Product {
   @OneToMany(() => CategoryAssignment, (assignment) => assignment.product)
   assigments!: CategoryAssignment[];
 
-  @OneToMany(() => Image, (image) => image.product, {
-    onDelete: 'CASCADE',
-  })
+  @OneToMany(() => Image, (image) => image.product)
   images!: Image[];
 
   @OneToMany(() => Discount, (discount) => discount.product)
