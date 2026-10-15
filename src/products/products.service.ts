@@ -14,7 +14,7 @@ import { ProductType } from 'src/product-types/entities/product-type.entity';
 import { In, Repository } from 'typeorm';
 import { Category } from 'src/categories/entities/category.entity';
 import { Product } from './entities/product.entity';
-import { DataSource } from 'typeorm/browser';
+import { DataSource } from 'typeorm';
 import { ProductTypeAssignment } from 'src/product-types/entities/product-type-assigmnent.entity';
 import { CategoryAssignment } from 'src/categories/entities/category-assigment.entity';
 
@@ -51,16 +51,26 @@ export class ProductsService {
     const sortedArray = [...discounts].sort(
       (a, b) => a.minimumDiscountQuantity - b.minimumDiscountQuantity,
     );
+    const describe = (d: CreateDiscountDto) =>
+      d.noUpperLimit
+        ? `${d.minimumDiscountQuantity}+ units`
+        : `${d.minimumDiscountQuantity}-${d.maximumDiscountQuantity} units`;
 
     for (let i = 0; i < sortedArray.length - 1; i++) {
       const current = sortedArray[i];
       const next = sortedArray[i + 1];
       if (current.noUpperLimit) {
-        throw new BadRequestException('Overlap');
+        throw new BadRequestException(
+          `Discount tier "${describe(current)}" has no upper limit, so it already covers "${describe(next)}". ` +
+            `Remove the later tier, or set a maximum quantity on the first one.`,
+        );
       } else if (
         current.maximumDiscountQuantity! >= next.minimumDiscountQuantity
       ) {
-        throw new BadRequestException('overlap');
+        throw new BadRequestException(
+          `Discount tiers "${describe(current)}" and "${describe(next)}" overlap. ` +
+            `Each quantity can only match one tier, so the first tier must end before the next one starts.`,
+        );
       }
     }
   }
@@ -81,7 +91,7 @@ export class ProductsService {
 
     if (basePrice > floorPrice) {
       throw new BadRequestException(
-        'Base Price should be less or equal to the base price',
+        'Base Price should be less or equal to the floor price',
       );
     }
     if (floorPrice > displayPrice) {

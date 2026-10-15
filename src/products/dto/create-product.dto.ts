@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   ArrayNotEmpty,
   ArrayUnique,
@@ -35,8 +35,9 @@ export class CreateProductDto {
 
   @IsOptional()
   @IsString()
+  @IsNotEmpty()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   sku?: string;
-
   @IsOptional()
   @IsNumber()
   sortOrder?: number;
@@ -49,7 +50,7 @@ export class CreateProductDto {
 
   @IsNotEmpty()
   @IsBoolean()
-  commingSoon!: boolean;
+  comingSoon!: boolean;
 
   @IsNotEmpty()
   @IsBoolean()
@@ -79,15 +80,15 @@ export class CreateProductDto {
 
   // inventory and discount details
 
-  @ValidateIf((o) => o.inventoryEnabled === true)
-  @IsInt()
-  @Min(0)
-  initialStockQuantity!: number;
+  // @ValidateIf((o) => o.inventoryEnabled === true)
+  // @IsInt()
+  // @Min(0)
+  // initialStockQuantity!: number;
 
-  @ValidateIf((o) => o.inventoryEnabled === true)
-  @IsInt()
-  @Min(0)
-  lowStockThreshold!: number;
+  // @ValidateIf((o) => o.inventoryEnabled === true)
+  // @IsInt()
+  // @Min(0)
+  // lowStockThreshold!: number;
 
   // relations
 

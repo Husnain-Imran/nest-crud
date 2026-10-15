@@ -11,7 +11,16 @@ import { CategoryAssignment } from 'src/categories/entities/category-assigment.e
 import { Discount } from './entities/discount.entity';
 
 @Module({
-  imports : [TypeOrmModule.forFeature([Product ,  ProductType , ProductTypeAssignment  , Category , CategoryAssignment , Discount])],
+  imports: [
+    TypeOrmModule.forFeature([
+      Product,
+      ProductType,
+      ProductTypeAssignment,
+      Category,
+      CategoryAssignment,
+      Discount,
+    ]),
+  ],
   controllers: [ProductsController],
   providers: [ProductsService],
 })
