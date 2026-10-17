@@ -17,6 +17,15 @@ export class Image {
   @Column()
   url!: string;
 
+  @Column()
+  fileKey!: string;
+
+  @Column({ default: false })
+  isThumbnail!: boolean;
+
+  @Column({ type: 'int', default: 0 })
+  dislayOrder!: number;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
   @UpdateDateColumn({ name: 'updated_at' })
