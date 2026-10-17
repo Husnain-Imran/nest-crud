@@ -12,6 +12,7 @@ import { BooksModule } from './books/books.module';
 import { ProductsModule } from './products/products.module';
 import { ProductTypesModule } from './product-types/product-types.module';
 import { CategoriesModule } from './categories/categories.module';
+import { UploadthingModule } from './uploadthing/uploadthing.module';
 
 @Module({
   imports: [

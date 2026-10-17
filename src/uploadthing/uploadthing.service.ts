@@ -29,13 +29,14 @@ export class UploadthingService {
     );
 
     const results = await this.utapi.uploadFiles(webFiles);
+    console.log(JSON.stringify(results, null, 2));
 
     return results.map((result) =>
       result.error
         ? { error: result.error.message }
         : {
             key: result.data[0].key,
-            url: result.data[0].url,
+            url: result.data[0].ufsUrl,
             name: result.data[0].name,
           },
     );
