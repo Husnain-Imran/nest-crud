@@ -13,7 +13,7 @@ import { User } from 'src/users/entities/user.entity';
 import { CreateDiscountDto } from './dto/create.disocunt.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ProductType } from 'src/product-types/entities/product-type.entity';
-import { In, Repository } from 'typeorm';
+import { In, MoreThanOrEqual, Repository } from 'typeorm';
 import { Category } from 'src/categories/entities/category.entity';
 import { Product } from './entities/product.entity';
 import { DataSource } from 'typeorm';
@@ -105,6 +105,7 @@ export class ProductsService {
       discounts,
       categoryIds,
       productTypeIds,
+      sortOrder,
       ...productData
     } = createProductDto;
 
@@ -176,16 +177,29 @@ export class ProductsService {
     // Phase 2 transcations (use only manager inside )
     // TODO 5 SAVE product
     // TODO 6 SAVE assigmnets
-    // TODO 7 SAVE  discounts
-    // let productId: string;
+    // TODO 7 SAVE  discou
+
     try {
       const productId = await this.dataSource.transaction(async (manager) => {
+        // position logic
+
+        const max = (await manager.maximum(Product, 'sortOrder')) ?? 0;
+        const end = max + 1;
+        const position = Math.min(Math.max(sortOrder ?? end, 1), end);
+
+        await manager.increment(
+          Product, // 1. which table
+          { sortOrder: MoreThanOrEqual(position) }, // 2. which rows (the WHERE)
+          'sortOrder', // 3. which column to change
+          1, // 4. how much to add
+        );
         const product = manager.create(Product, {
           ...productData,
           basePrice,
           displayPrice,
           ceilingPrice,
           floorPrice,
+          sortOrder: position,
           createdBy: user,
         });
         await manager.save(product);

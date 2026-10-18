@@ -33,8 +33,8 @@ export class Product {
   @Column({ nullable: true, unique: true })
   sku?: string;
 
-  @Column({ nullable: true })
-  sortOrder?: number;
+  @Column({ type: 'int', nullable: true })
+  sortOrder!: number;
 
   @Column()
   isActive?: boolean;
