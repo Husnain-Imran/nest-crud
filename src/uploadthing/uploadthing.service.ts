@@ -29,24 +29,30 @@ export class UploadthingService {
     );
 
     const results = await this.utapi.uploadFiles(webFiles);
-    console.log(JSON.stringify(results, null, 2));
+    console.log('upload data ', JSON.stringify(results, null, 2));
+    console.log('upload data 111', results);
 
-    return results.map((result) =>
+    return results.map((result, index) =>
       result.error
-        ? { error: result.error.message }
+        ? { index, error: result.error.message }
         : {
-            key: result.data[0].key,
-            url: result.data[0].ufsUrl,
-            name: result.data[0].name,
+            index,
+            key: result.data.key,
+            url: result.data.ufsUrl,
+            name: result.data.name,
           },
     );
   }
 
-  async deleteFile(key: string): Promise<void> {
+  async deleteFile(keys: string[]): Promise<void> {
     try {
-      await this.utapi.deleteFiles(key);
+      await this.utapi.deleteFiles(keys);
     } catch (error) {
-      throw new Error(`Failed to delete file with key ${key}: ${error}`);
+      throw new Error(
+        `Failed to delete files with keys ${keys.join(', ')}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
     }
   }
 }
