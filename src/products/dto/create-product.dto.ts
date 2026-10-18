@@ -80,15 +80,15 @@ export class CreateProductDto {
 
   // inventory and discount details
 
-  // @ValidateIf((o) => o.inventoryEnabled === true)
-  // @IsInt()
-  // @Min(0)
-  // initialStockQuantity!: number;
+  @ValidateIf((o) => o.inventoryEnabled === true)
+  @IsInt()
+  @Min(0)
+  initialStockQuantity!: number;
 
-  // @ValidateIf((o) => o.inventoryEnabled === true)
-  // @IsInt()
-  // @Min(0)
-  // lowStockThreshold!: number;
+  @ValidateIf((o) => o.inventoryEnabled === true)
+  @IsInt()
+  @Min(0)
+  lowStockThreshold!: number;
 
   // relations
 
