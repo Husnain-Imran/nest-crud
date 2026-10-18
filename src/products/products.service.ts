@@ -1,3 +1,5 @@
+import { UploadResult, UploadSuccess } from './../uploadthing/types/types';
+import { UploadthingService } from './../uploadthing/uploadthing.service';
 import { map } from 'rxjs/operators';
 import { Discount } from 'src/products/entities/discount.entity';
 import {
@@ -17,6 +19,8 @@ import { Product } from './entities/product.entity';
 import { DataSource } from 'typeorm';
 import { ProductTypeAssignment } from 'src/product-types/entities/product-type-assigmnent.entity';
 import { CategoryAssignment } from 'src/categories/entities/category-assigment.entity';
+import { uploadFile } from 'uploadthing/client-future';
+import { Image } from './entities/Image.entity';
 
 @Injectable()
 export class ProductsService {
@@ -29,6 +33,8 @@ export class ProductsService {
     @InjectRepository(Product) private ProductRepo: Repository<Product>,
 
     @InjectRepository(Discount) private DisocuntRepo: Repository<Discount>,
+
+    private readonly UploadthingService: UploadthingService,
 
     private readonly dataSource: DataSource,
   ) {}
@@ -74,7 +80,20 @@ export class ProductsService {
       }
     }
   }
-  async create(createProductDto: CreateProductDto, user: User) {
+  private async safeDelete(keys: string[]) {
+    if (keys.length === 0) return;
+    try {
+      await this.UploadthingService.deleteFile(keys);
+    } catch (e) {
+      // don't let cleanup failure hide the real error; log it so you can clean up later
+      console.error('UploadThing cleanup failed', keys, e);
+    }
+  }
+  async create(
+    createProductDto: CreateProductDto,
+    user: User,
+    files: Express.Multer.File[] = [],
+  ) {
     // Phase 1 : checks
     //TODO 1 check the pricing order rule
 
@@ -110,6 +129,7 @@ export class ProductsService {
 
     this.validateDiscount(discounts);
     this.validateDiscountOverlap(discounts);
+    let uploaded: UploadSuccess[] = [];
 
     //TODO 3 categories and product type exist or not
     const categories = await this.categoryRepo.findBy({
@@ -137,58 +157,94 @@ export class ProductsService {
       }
     }
 
+    if (files.length > 0) {
+      const result = await this.UploadthingService.uploadFiles(files);
+      const succeeded = result.filter((r): r is UploadSuccess => 'key' in r);
+      const failed = result.filter((r) => 'error' in r);
+      if (failed.length > 0) {
+        await this.safeDelete(succeeded.map((r) => r.key));
+        throw new BadRequestException({
+          message: 'Failed to upload one or more product images.',
+          errors: failed.map((r) =>
+            'error' in r ? `Image #${r.index + 1}: ${r.error}` : '',
+          ),
+        });
+      }
+      uploaded = succeeded.sort((a, b) => a.index - b.index);
+    }
+
     // Phase 2 transcations (use only manager inside )
     // TODO 5 SAVE product
     // TODO 6 SAVE assigmnets
     // TODO 7 SAVE  discounts
+    // let productId: string;
+    try {
+      const productId = await this.dataSource.transaction(async (manager) => {
+        const product = manager.create(Product, {
+          ...productData,
+          basePrice,
+          displayPrice,
+          ceilingPrice,
+          floorPrice,
+          createdBy: user,
+        });
+        await manager.save(product);
 
-    const productId = await this.dataSource.transaction(async (manager) => {
-      const product = manager.create(Product, {
-        ...productData,
-        basePrice,
-        displayPrice,
-        ceilingPrice,
-        floorPrice,
-        createdBy: user,
+        const productTypeRow = productTypeIds.map((productTypeId) => ({
+          productId: product.id,
+          productTypeId: productTypeId,
+        }));
+        await manager.save(ProductTypeAssignment, productTypeRow);
+        const categoryRow = categoryIds.map((categoryId) => ({
+          productId: product.id,
+          categoryId: categoryId,
+        }));
+        await manager.save(CategoryAssignment, categoryRow);
+
+        const discountRow = (discounts ?? []).map((d) => ({
+          ...d,
+          productId: product.id,
+          maximumDiscountQuantity: d.noUpperLimit
+            ? null
+            : d.maximumDiscountQuantity,
+        }));
+        await manager.save(Discount, discountRow);
+
+        if (uploaded.length > 0) {
+          await manager.save(
+            Image,
+            uploaded.map((image) =>
+              manager.create(Image, {
+                productId: product.id,
+                url: image.url,
+                fileKey: image.key,
+                displayOrder: image.index,
+                isThumbnail: image.index === 0,
+              }),
+            ),
+          );
+        }
+        return product.id;
       });
-      await manager.save(product);
+      const createdProduct = await this.ProductRepo.findOne({
+        where: { id: productId },
+        relations: {
+          images: true,
+          assigments: true,
+          typeAssignment: true,
+          discounts: true,
+          createdBy: true,
+        },
+      });
+      return createdProduct;
+    } catch (err) {
+      this.safeDelete(uploaded.map((r) => r.key));
 
-      const productTypeRow = productTypeIds.map((productTypeId) => ({
-        productId: product.id,
-        productTypeId: productTypeId,
-      }));
-      await manager.save(ProductTypeAssignment, productTypeRow);
-      const categoryRow = categoryIds.map((categoryId) => ({
-        productId: product.id,
-        categoryId: categoryId,
-      }));
-      await manager.save(CategoryAssignment, categoryRow);
-
-      const discountRow = (discounts ?? []).map((d) => ({
-        ...d,
-        productId: product.id,
-        maximumDiscountQuantity: d.noUpperLimit
-          ? null
-          : d.maximumDiscountQuantity,
-      }));
-      await manager.save(Discount, discountRow);
-      return product.id;
-    });
-    const createdProduct = await this.ProductRepo.findOne({
-      where: { id: productId },
-      relations: {
-        images: true,
-        assigments: true,
-        typeAssignment: true,
-        discounts: true,
-        createdBy: true,
-      },
-    });
+      return err;
+    }
 
     //Phase 3
     // TODO 9 return product with the relation
-
-    return createdProduct;
   }
 
   findAll() {

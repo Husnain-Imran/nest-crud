@@ -24,7 +24,7 @@ export class Image {
   isThumbnail!: boolean;
 
   @Column({ type: 'int', default: 0 })
-  dislayOrder!: number;
+  displayOrder!: number;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
