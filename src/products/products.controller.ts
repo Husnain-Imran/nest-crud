@@ -1,3 +1,4 @@
+import { CurrentUser } from './../users/decorators/current-user.decorator';
 import {
   Controller,
   Get,
@@ -17,7 +18,6 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { JwtAuthGuard } from 'src/auth/guard/JwtAuthGuard';
 import { Roles } from 'src/users/decorators/role.decorator';
 import { Role } from 'src/users/enums/Role.enum';
-import { CurrentUser } from 'src/users/decorators/current-user.decorator';
 import { User } from 'src/users/entities/user.entity';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import {
@@ -70,9 +70,15 @@ export class ProductsController {
     return this.productsService.findOne(+id);
   }
 
+  @Roles(Role.Admin)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
-    return this.productsService.update(+id, updateProductDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateProductDto: UpdateProductDto,
+    @UploadedFiles() files: Express.Multer.File[],
+    @CurrentUser() user: User,
+  ) {
+    return this.productsService.update(id, updateProductDto, files);
   }
 
   @Delete(':id')
