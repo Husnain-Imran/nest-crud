@@ -70,6 +70,24 @@ export class ProductsController {
     return this.productsService.findOne(+id);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(
+    FilesInterceptor('images', MAX_IMAGE_PER_PRODUCT, {
+      limits: { fileSize: MAX_IMAGE_SIZE_BYTES },
+      fileFilter: (req, file, callBack) => {
+        if (!ALLOWED_IMAGE_MIME_TYPES.includes(file.mimetype)) {
+          return callBack(
+            new BadRequestException(
+              'Only jpeg, png and webp images are allowed',
+            ),
+            false,
+          );
+        }
+        callBack(null, true);
+      },
+    }),
+    ParseDataFieldInterceptor,
+  )
   @Roles(Role.Admin)
   @Patch(':id')
   update(

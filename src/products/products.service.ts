@@ -278,6 +278,7 @@ export class ProductsService {
     updateProductDto: UpdateProductDto,
     files: Express.Multer.File[] = [],
   ) {
+    console.log('the data from update dto', updateProductDto);
     const existingProduct = await this.ProductRepo.findOne({
       where: { id: id },
       relations: {
@@ -301,6 +302,7 @@ export class ProductsService {
 
     const hasDeletedFiles = !!deletedImageKeys?.length;
     const hasNewFiles = files.length > 0;
+    console.log('fields', feilds);
     const hasUpdateFields = Object.values(feilds).some(
       (value) => value !== undefined && value !== null,
     );

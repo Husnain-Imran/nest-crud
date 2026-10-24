@@ -17,6 +17,5 @@ export class UpdateProductDto extends PartialType(
   @IsOptional()
   @IsArray()
   @ArrayUnique()
-  @IsString()
   deletedImageKeys?: string[];
 }
