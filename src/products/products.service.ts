@@ -21,6 +21,7 @@ import { ProductTypeAssignment } from 'src/product-types/entities/product-type-a
 import { CategoryAssignment } from 'src/categories/entities/category-assigment.entity';
 import { Image } from './entities/Image.entity';
 import { MAX_IMAGE_PER_PRODUCT } from './constants/image.constant';
+import { SearchProductDto } from './dto/search-product.dto';
 
 @Injectable()
 export class ProductsService {
@@ -251,8 +252,8 @@ export class ProductsService {
         where: { id: productId },
         relations: {
           images: true,
-          assigments: true,
-          typeAssignment: true,
+          productTypeAssignment: true,
+          categoryAssigments: true,
           discounts: true,
           createdBy: true,
         },
@@ -265,8 +266,66 @@ export class ProductsService {
     }
   }
 
-  findAll() {
-    return `This action returns all products`;
+  async findAll(searchProductDto: SearchProductDto) {
+    const {
+      search,
+      categoryId,
+      productTypeId,
+      isActive,
+      inventoryEnabled,
+      page,
+      limit,
+    } = searchProductDto;
+
+    const query = this.ProductRepo.createQueryBuilder('product')
+      .leftJoinAndSelect('product.images', 'image')
+      .leftJoinAndSelect(
+        'product.productTypeAssignment',
+        'productTypeAssignment',
+      )
+      .leftJoinAndSelect('productTypeAssignment.productType', 'productType')
+      .leftJoinAndSelect('product.categoryAssigments', 'categoryAssigments')
+      .leftJoinAndSelect('categoryAssigments.category', 'category')
+      .orderBy('product.sortOrder', 'ASC');
+
+    if (search) {
+      query.andWhere(
+        '(product.title ILIKE :search OR product.sku ILIKE :search)',
+        {
+          search: `%${search}%`,
+        },
+      );
+    }
+    if (isActive !== undefined) {
+      query.andWhere('product.isActive = :isActive', {
+        isActive,
+      });
+    }
+    if (inventoryEnabled !== undefined) {
+      query.andWhere('product.inventoryEnabled = :inventoryEnabled', {
+        inventoryEnabled,
+      });
+    }
+    if (productTypeId?.length) {
+      query.andWhere('productType.id IN (:...productTypeId)', {
+        productTypeId,
+      });
+    }
+    if (categoryId?.length) {
+      query.andWhere('category.id IN (:...categoryId)', {
+        categoryId,
+      });
+    }
+    query.skip(page - 1 * limit);
+    query.take(limit);
+    const [products, total] = await query.getManyAndCount();
+    return {
+      products,
+      total,
+      page,
+      limit,
+      totalPage: Math.ceil(total / limit),
+    };
   }
 
   findOne(id: number) {
@@ -561,8 +620,8 @@ export class ProductsService {
       where: { id },
       relations: {
         images: true,
-        assigments: true,
-        typeAssignment: true,
+        productTypeAssignment: true,
+        categoryAssigments: true,
         discounts: true,
       },
       order: {

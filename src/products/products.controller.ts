@@ -11,6 +11,7 @@ import {
   UseInterceptors,
   BadRequestException,
   UploadedFiles,
+  Query,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -27,6 +28,7 @@ import {
 } from './constants/image.constant';
 import { uploadFiles } from 'uploadthing/client-future';
 import { ParseDataFieldInterceptor } from './interceptor/parse-data-field.interceptor';
+import { SearchProductDto } from './dto/search-product.dto';
 
 @Controller('products')
 export class ProductsController {
@@ -61,8 +63,8 @@ export class ProductsController {
   }
 
   @Get()
-  findAll() {
-    return this.productsService.findAll();
+  findAll(@Query() productDto: SearchProductDto) {
+    return this.productsService.findAll(productDto);
   }
 
   @Get(':id')
