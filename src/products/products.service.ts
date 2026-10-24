@@ -534,6 +534,7 @@ export class ProductsService {
             const first = [...remainingImages].sort(
               (a, b) => a.displayOrder - b.displayOrder,
             )[0];
+            await manager.update(Image, first.id, { isThumbnail: true });
           } else if (newRows.length > 0) {
             newRows[0].isThumbnail = true;
           }
