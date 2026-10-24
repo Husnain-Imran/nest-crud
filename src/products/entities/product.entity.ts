@@ -76,10 +76,10 @@ export class Product {
   ceilingPrice!: number;
 
   @OneToMany(() => ProductTypeAssignment, (assignment) => assignment.product)
-  typeAssignment!: ProductTypeAssignment[];
+  productTypeAssignment!: ProductTypeAssignment[];
 
   @OneToMany(() => CategoryAssignment, (assignment) => assignment.product)
-  assigments!: CategoryAssignment[];
+  categoryAssigments!: CategoryAssignment[];
 
   @OneToMany(() => Image, (image) => image.product)
   images!: Image[];

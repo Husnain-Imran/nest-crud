@@ -9,7 +9,7 @@ export class ProductTypeAssignment {
 
   @PrimaryColumn({ name: 'product_type_id', type: 'uuid' })
   productTypeId!: string;
-  @ManyToOne(() => Product, (product) => product.typeAssignment, {
+  @ManyToOne(() => Product, (product) => product.productTypeAssignment, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'product_id' })

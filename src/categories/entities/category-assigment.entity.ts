@@ -16,7 +16,7 @@ export class CategoryAssignment {
   @JoinColumn({ name: 'category_id' })
   category!: Category;
 
-  @ManyToOne(() => Product, (product) => product.assigments)
+  @ManyToOne(() => Product, (product) => product.categoryAssigments)
   @JoinColumn({ name: 'product_id' })
   product!: Product;
 }
