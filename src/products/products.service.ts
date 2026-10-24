@@ -1,11 +1,11 @@
 import { UploadResult, UploadSuccess } from './../uploadthing/types/types';
 import { UploadthingService } from './../uploadthing/uploadthing.service';
-import { map } from 'rxjs/operators';
 import { Discount } from 'src/products/entities/discount.entity';
 import {
   BadRequestException,
   ConflictException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -13,14 +13,14 @@ import { User } from 'src/users/entities/user.entity';
 import { CreateDiscountDto } from './dto/create.disocunt.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ProductType } from 'src/product-types/entities/product-type.entity';
-import { In, MoreThanOrEqual, Repository } from 'typeorm';
+import { Between, In, MoreThanOrEqual, Not, Repository } from 'typeorm';
 import { Category } from 'src/categories/entities/category.entity';
 import { Product } from './entities/product.entity';
 import { DataSource } from 'typeorm';
 import { ProductTypeAssignment } from 'src/product-types/entities/product-type-assigmnent.entity';
 import { CategoryAssignment } from 'src/categories/entities/category-assigment.entity';
-import { uploadFile } from 'uploadthing/client-future';
 import { Image } from './entities/Image.entity';
+import { MAX_IMAGE_PER_PRODUCT } from './constants/image.constant';
 
 @Injectable()
 export class ProductsService {
@@ -80,6 +80,30 @@ export class ProductsService {
       }
     }
   }
+  private validatePricing(prices: {
+    basePrice: number;
+    floorPrice: number;
+    displayPrice: number;
+    ceilingPrice: number;
+  }) {
+    const { basePrice, floorPrice, displayPrice, ceilingPrice } = prices;
+    if (basePrice > floorPrice) {
+      throw new BadRequestException(
+        'Base Price should be less or equal to the floor price',
+      );
+    }
+    if (floorPrice > displayPrice) {
+      throw new BadRequestException(
+        'floor price should be less or equal to display price',
+      );
+    }
+
+    if (displayPrice > ceilingPrice) {
+      throw new BadRequestException(
+        'display price should be less or equal to ceiling price  ',
+      );
+    }
+  }
   private async safeDelete(keys: string[]) {
     if (keys.length === 0) return;
     try {
@@ -89,6 +113,7 @@ export class ProductsService {
       console.error('UploadThing cleanup failed', keys, e);
     }
   }
+
   async create(
     createProductDto: CreateProductDto,
     user: User,
@@ -109,30 +134,17 @@ export class ProductsService {
       ...productData
     } = createProductDto;
 
-    if (basePrice > floorPrice) {
-      throw new BadRequestException(
-        'Base Price should be less or equal to the floor price',
-      );
-    }
-    if (floorPrice > displayPrice) {
-      throw new BadRequestException(
-        'floor price should be less or equal to display price',
-      );
-    }
-
-    if (displayPrice > ceilingPrice) {
-      throw new BadRequestException(
-        'display price should be less or equal to ceiling price  ',
-      );
-    }
-
-    //TODO 2 discount min /max rule
+    this.validatePricing({
+      basePrice,
+      floorPrice,
+      displayPrice,
+      ceilingPrice,
+    });
 
     this.validateDiscount(discounts);
     this.validateDiscountOverlap(discounts);
     let uploaded: UploadSuccess[] = [];
 
-    //TODO 3 categories and product type exist or not
     const categories = await this.categoryRepo.findBy({
       id: In(categoryIds),
     });
@@ -146,8 +158,6 @@ export class ProductsService {
     if (productTypes.length !== new Set(productTypeIds).size) {
       throw new BadRequestException('One or more product IDs are invalid');
     }
-
-    //TODO 4 SKU already exist
 
     if (createProductDto.sku) {
       const exists = await this.ProductRepo.findOneBy({
@@ -175,9 +185,6 @@ export class ProductsService {
     }
 
     // Phase 2 transcations (use only manager inside )
-    // TODO 5 SAVE product
-    // TODO 6 SAVE assigmnets
-    // TODO 7 SAVE  discou
 
     try {
       const productId = await this.dataSource.transaction(async (manager) => {
@@ -256,9 +263,6 @@ export class ProductsService {
 
       return err;
     }
-
-    //Phase 3
-    // TODO 9 return product with the relation
   }
 
   findAll() {
@@ -269,8 +273,299 @@ export class ProductsService {
     return `This action returns a #${id} product`;
   }
 
-  update(id: number, updateProductDto: UpdateProductDto) {
-    return `This action updates a #${id} product`;
+  async update(
+    id: string,
+    updateProductDto: UpdateProductDto,
+    files: Express.Multer.File[] = [],
+  ) {
+    const existingProduct = await this.ProductRepo.findOne({
+      where: { id: id },
+      relations: {
+        images: true,
+      },
+    });
+    if (!existingProduct) {
+      throw new NotFoundException('Product Not Found ');
+    }
+    const { deletedImageKeys, ...feilds } = updateProductDto;
+
+    // 2. Validate null and empty string values
+    const invalidFields = Object.entries(feilds)
+      .filter(([_, value]) => value === null || value === '')
+      .map(([key]) => key);
+    if (invalidFields.length > 0) {
+      throw new BadRequestException(
+        `The following fields cannot be null or empty: ${invalidFields.join(', ')}`,
+      );
+    }
+
+    const hasDeletedFiles = !!deletedImageKeys?.length;
+    const hasNewFiles = files.length > 0;
+    const hasUpdateFields = Object.values(feilds).some(
+      (value) => value !== undefined && value !== null,
+    );
+
+    if (!hasDeletedFiles && !hasNewFiles && !hasUpdateFields) {
+      throw new BadRequestException(
+        'No changes provided: send at least one field, deletedImageIds, or image file.',
+      );
+    }
+    const { basePrice, floorPrice, displayPrice, ceilingPrice } = feilds;
+    const hasPriceUpdate = [
+      basePrice,
+      floorPrice,
+      displayPrice,
+      ceilingPrice,
+    ].some((price) => price !== undefined);
+    if (hasPriceUpdate) {
+      this.validatePricing({
+        basePrice: basePrice ?? existingProduct.basePrice,
+        floorPrice: floorPrice ?? existingProduct.floorPrice,
+        displayPrice: displayPrice ?? existingProduct.displayPrice,
+        ceilingPrice: ceilingPrice ?? existingProduct.ceilingPrice,
+      });
+    }
+
+    const { categoryIds, productTypeIds, discounts, sortOrder, ...columns } =
+      feilds;
+
+    if (categoryIds !== undefined) {
+      const existingCategories = await this.categoryRepo.findBy({
+        id: In(categoryIds),
+      });
+      if (existingCategories.length !== new Set(categoryIds).size) {
+        throw new BadRequestException(
+          'One or more provided categories are invalid',
+        );
+      }
+    }
+    if (productTypeIds !== undefined) {
+      const existingProductTypeIds = await this.productTypeRepo.findBy({
+        id: In(productTypeIds),
+      });
+      if (existingProductTypeIds.length !== new Set(productTypeIds).size) {
+        throw new BadRequestException(
+          'One or more provided product types id  are invalid',
+        );
+      }
+    }
+
+    if (columns.sku && columns.sku !== existingProduct.sku) {
+      const skuTaken = await this.ProductRepo.findOneBy({
+        sku: columns.sku,
+        id: Not(id),
+      });
+      if (skuTaken) {
+        throw new ConflictException('A product with this SKU already exists');
+      }
+    }
+    if (discounts !== undefined) {
+      this.validateDiscount(discounts);
+      this.validateDiscountOverlap(discounts);
+    }
+
+    const updates = Object.fromEntries(
+      Object.entries(columns).filter(([_, value]) => value !== undefined),
+    );
+    const hasSortOrder = sortOrder !== undefined;
+
+    let imageToDelete: Image[] = [];
+    if (deletedImageKeys !== undefined) {
+      const existingImageKeySet = new Set(
+        existingProduct.images.map((image) => image.fileKey),
+      );
+
+      const isImageKeyValid = (deletedImageKeys ?? []).every((key) =>
+        existingImageKeySet.has(key),
+      );
+      if (!isImageKeyValid) {
+        throw new BadRequestException('One or two image key is invalid');
+      }
+      imageToDelete = existingProduct.images.filter((image) =>
+        deletedImageKeys.includes(image.fileKey),
+      );
+    }
+    const maxCountCheck =
+      existingProduct.images.length - imageToDelete.length + files.length;
+    if (maxCountCheck > MAX_IMAGE_PER_PRODUCT) {
+      throw new BadRequestException(
+        `Number of uplaoded images increase by ${MAX_IMAGE_PER_PRODUCT}`,
+      );
+    }
+    let uploaded: UploadSuccess[] = [];
+    if (files.length > 0) {
+      const result = await this.UploadthingService.uploadFiles(files);
+      const succeeded = result.filter((r): r is UploadSuccess => 'key' in r);
+      const failed = result.filter((r) => 'error' in r);
+      if (failed.length > 0) {
+        await this.safeDelete(succeeded.map((r) => r.key));
+        throw new BadRequestException({
+          message: 'Failed to upload one or more product images.',
+          errors: failed.map((r) =>
+            'error' in r ? `Image #${r.index + 1}: ${r.error}` : '',
+          ),
+        });
+      }
+      uploaded = succeeded.sort((a, b) => a.index - b.index);
+    }
+    try {
+      const productId = await this.dataSource.transaction(async (manager) => {
+        if (hasSortOrder) {
+          const max = (await manager.maximum(Product, 'sortOrder')) ?? 0;
+          const existingSortOrder = existingProduct.sortOrder;
+
+          // 1. the ceiling: max if the product already has a position, max + 1 if it doesn't
+          const ceiling = existingSortOrder == null ? max + 1 : max;
+
+          // 2. clamp the REQUESTED number between 1 and the ceiling
+          const newPosition = Math.min(Math.max(sortOrder, 1), ceiling);
+          if (newPosition !== existingProduct.sortOrder) {
+            if (existingProduct.sortOrder == null) {
+              await manager.increment(
+                Product, // 1. which table
+                {
+                  sortOrder: MoreThanOrEqual(newPosition),
+                }, // 2. which rows (the WHERE)
+                'sortOrder', // 3. which column to change
+                1, // 4. how much to add
+              );
+            } else if (newPosition < existingProduct.sortOrder) {
+              await manager.increment(
+                Product, // 1. which table
+                {
+                  sortOrder: Between(
+                    newPosition,
+                    existingProduct.sortOrder - 1,
+                  ),
+                }, // 2. which rows (the WHERE)
+                'sortOrder', // 3. which column to change
+                1, // 4. how much to add
+              );
+            } else {
+              await manager.decrement(
+                Product, // 1. which table
+                {
+                  sortOrder: Between(
+                    existingProduct.sortOrder + 1,
+                    newPosition,
+                  ),
+                }, // 2. which rows (the WHERE)
+                'sortOrder', // 3. which column to change
+                1, // 4. how much to add
+              );
+            }
+            updates.sortOrder = newPosition;
+          }
+        }
+        if (Object.keys(updates).length > 0) {
+          const product = await manager.update(
+            Product,
+            existingProduct.id,
+            updates,
+            // sort order logic will be later
+          );
+        }
+
+        if (categoryIds !== undefined) {
+          await manager.delete(CategoryAssignment, {
+            productId: existingProduct.id,
+          });
+          await manager.save(
+            CategoryAssignment,
+            categoryIds.map((categoryId) => ({
+              productId: existingProduct.id,
+              categoryId,
+            })),
+          );
+        }
+        if (productTypeIds !== undefined) {
+          await manager.delete(ProductTypeAssignment, {
+            productId: existingProduct.id,
+          });
+          await manager.save(
+            ProductTypeAssignment,
+            productTypeIds.map((productTypeId) => ({
+              productId: existingProduct.id,
+              productTypeId,
+            })),
+          );
+        }
+        if (discounts !== undefined) {
+          await manager.delete(Discount, {
+            productId: existingProduct.id,
+          });
+
+          const discountRow = discounts.map((d) => ({
+            ...d,
+            maximumDiscountQuantity: d.noUpperLimit
+              ? null
+              : d.maximumDiscountQuantity,
+            productId: existingProduct.id,
+          }));
+          await manager.save(Discount, discountRow);
+        }
+        if (deletedImageKeys !== undefined) {
+          await manager.delete(Image, {
+            fileKey: In(deletedImageKeys),
+            productId: existingProduct.id,
+          });
+        }
+        const remainingImages = await manager.find(Image, {
+          where: {
+            productId: existingProduct.id,
+          },
+        });
+        const startingPoint =
+          remainingImages.length > 0
+            ? Math.max(...remainingImages.map((image) => image.displayOrder)) +
+              1
+            : 0;
+
+        const hasThumbnail = remainingImages.some((image) => image.isThumbnail);
+        const newRows = uploaded.map((file, index) => ({
+          productId: existingProduct.id,
+          url: file.url,
+          fileKey: file.key,
+          displayOrder: startingPoint + index,
+          isThumbnail: false,
+        }));
+        if (!hasThumbnail) {
+          if (remainingImages.length > 0) {
+            const first = [...remainingImages].sort(
+              (a, b) => a.displayOrder - b.displayOrder,
+            )[0];
+          } else if (newRows.length > 0) {
+            newRows[0].isThumbnail = true;
+          }
+        }
+        if (newRows.length > 0) {
+          await manager.save(Image, newRows);
+        }
+      });
+    } catch (err: any) {
+      // the new files are in UploadThing, but the rows were rolled back
+      await this.safeDelete(uploaded.map((file) => file.key));
+
+      if (err.code === 'ER_DUP_ENTRY') {
+        throw new ConflictException('A product with this SKU already exists');
+      }
+      throw err;
+    }
+    // only reached when the transaction committed
+    await this.safeDelete(imageToDelete.map((image) => image.fileKey));
+
+    return this.ProductRepo.findOne({
+      where: { id },
+      relations: {
+        images: true,
+        assigments: true,
+        typeAssignment: true,
+        discounts: true,
+      },
+      order: {
+        images: { displayOrder: 'ASC', createdAt: 'ASC' },
+      },
+    });
   }
 
   remove(id: number) {
