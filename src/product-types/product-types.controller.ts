@@ -36,12 +36,12 @@ export class ProductTypesController {
     return this.productTypesService.findAll(searchProductDto);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin)
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.productTypesService.findOne(+id);
-  }
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Roles(Role.Admin)
+  // @Get(':id')
+  // findOne(@Param('id') id: string) {
+  //   return this.productTypesService.findOne(+id);
+  // }
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)
   @Patch(':id')

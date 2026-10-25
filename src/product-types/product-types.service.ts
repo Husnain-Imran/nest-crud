@@ -41,9 +41,9 @@ export class ProductTypesService {
     };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} ProductType`;
-  }
+  // findOne(id: number) {
+  //   return `This action returns a #${id} ProductType`;
+  // }
 
   async update(id: string, updateProductTypeDto: UpdateProductTypeDto) {
     const ProductType = await this.ProductTypeRepo.findOne({
