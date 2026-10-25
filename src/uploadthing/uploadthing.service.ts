@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UTApi } from 'uploadthing/server';
-import 'multer';
 import { UploadResult } from './types/types';
 
 @Injectable()
