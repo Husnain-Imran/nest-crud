@@ -9,6 +9,10 @@ import { SerializeInterceptor } from './interceptor/serializeInterceptor';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { CurrentUserInterceptor } from './interceptor/current-user.interceptor';
 import { BooksModule } from './books/books.module';
+import { ProductsModule } from './products/products.module';
+import { ProductTypesModule } from './product-types/product-types.module';
+import { CategoriesModule } from './categories/categories.module';
+import { UploadthingModule } from './uploadthing/uploadthing.module';
 
 @Module({
   imports: [
@@ -33,6 +37,9 @@ import { BooksModule } from './books/books.module';
       }),
     }),
     BooksModule,
+    ProductsModule,
+    ProductTypesModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
   providers: [

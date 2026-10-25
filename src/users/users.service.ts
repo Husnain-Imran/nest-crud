@@ -20,7 +20,7 @@ export class UsersService {
   }
   async findByEmail(email: string) {
     const user = await this.userRepo.findOneBy({ email });
-    console.log('user in user service', user);
+    // console.log('user in user service', user);
     return user;
   }
 }

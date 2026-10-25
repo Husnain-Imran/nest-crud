@@ -1,6 +1,7 @@
 import { Exclude } from 'class-transformer';
 
 import { Book } from 'src/books/entity/book.entity';
+import { Product } from 'src/products/entities/product.entity';
 import {
   Column,
   CreateDateColumn,
@@ -36,4 +37,6 @@ export class User {
 
   @UpdateDateColumn()
   updatedAt!: Date;
+  @OneToMany(() => Product, (Product) => Product.createdBy)
+  products!: Product[];
 }
