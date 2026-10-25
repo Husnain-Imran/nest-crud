@@ -490,17 +490,52 @@ export class ProductsService {
     }
     try {
       const productId = await this.dataSource.transaction(async (manager) => {
+        // 1. Lock every row that participates in ordering
+        await manager
+          .createQueryBuilder(Product, 'p')
+          .setLock('pessimistic_write')
+          .getMany();
+        // Lock this row — any other transaction trying to read/write this
+        // same product will block until this transaction finishes.
+        const lockedProduct = await manager.findOne(Product, {
+          where: { id: existingProduct.id },
+          relations: { images: true },
+        });
+
+        if (!lockedProduct) {
+          throw new NotFoundException('Product not found');
+        }
+        // Re-run the checks here, against the FRESH locked data,
+        // not against the `existingProduct` read before the transaction.
+        if (hasPriceUpdate) {
+          this.validatePricing({
+            basePrice: basePrice ?? lockedProduct.basePrice,
+            floorPrice: floorPrice ?? lockedProduct.floorPrice,
+            displayPrice: displayPrice ?? lockedProduct.displayPrice,
+            ceilingPrice: ceilingPrice ?? lockedProduct.ceilingPrice,
+          });
+        }
+        const currentImageCount = await manager.count(Image, {
+          where: { productId: lockedProduct.id },
+        });
+        const maxCountCheck =
+          currentImageCount - imageToDelete.length + files.length;
+        if (maxCountCheck > MAX_IMAGE_PER_PRODUCT) {
+          throw new BadRequestException(
+            `Number of uploaded images exceeds ${MAX_IMAGE_PER_PRODUCT}`,
+          );
+        }
         if (hasSortOrder) {
           const max = (await manager.maximum(Product, 'sortOrder')) ?? 0;
-          const existingSortOrder = existingProduct.sortOrder;
+          const existingSortOrder = lockedProduct.sortOrder;
 
           // 1. the ceiling: max if the product already has a position, max + 1 if it doesn't
           const ceiling = existingSortOrder == null ? max + 1 : max;
 
           // 2. clamp the REQUESTED number between 1 and the ceiling
           const newPosition = Math.min(Math.max(sortOrder, 1), ceiling);
-          if (newPosition !== existingProduct.sortOrder) {
-            if (existingProduct.sortOrder == null) {
+          if (newPosition !== lockedProduct.sortOrder) {
+            if (lockedProduct.sortOrder == null) {
               await manager.increment(
                 Product, // 1. which table
                 {
@@ -509,14 +544,11 @@ export class ProductsService {
                 'sortOrder', // 3. which column to change
                 1, // 4. how much to add
               );
-            } else if (newPosition < existingProduct.sortOrder) {
+            } else if (newPosition < lockedProduct.sortOrder) {
               await manager.increment(
                 Product, // 1. which table
                 {
-                  sortOrder: Between(
-                    newPosition,
-                    existingProduct.sortOrder - 1,
-                  ),
+                  sortOrder: Between(newPosition, lockedProduct.sortOrder - 1),
                 }, // 2. which rows (the WHERE)
                 'sortOrder', // 3. which column to change
                 1, // 4. how much to add
@@ -525,10 +557,7 @@ export class ProductsService {
               await manager.decrement(
                 Product, // 1. which table
                 {
-                  sortOrder: Between(
-                    existingProduct.sortOrder + 1,
-                    newPosition,
-                  ),
+                  sortOrder: Between(lockedProduct.sortOrder + 1, newPosition),
                 }, // 2. which rows (the WHERE)
                 'sortOrder', // 3. which column to change
                 1, // 4. how much to add
@@ -540,7 +569,7 @@ export class ProductsService {
         if (Object.keys(updates).length > 0) {
           const product = await manager.update(
             Product,
-            existingProduct.id,
+            lockedProduct.id,
             updates,
             // sort order logic will be later
           );
@@ -548,31 +577,31 @@ export class ProductsService {
 
         if (categoryIds !== undefined) {
           await manager.delete(CategoryAssignment, {
-            productId: existingProduct.id,
+            productId: lockedProduct.id,
           });
           await manager.save(
             CategoryAssignment,
             categoryIds.map((categoryId) => ({
-              productId: existingProduct.id,
+              productId: lockedProduct.id,
               categoryId,
             })),
           );
         }
         if (productTypeIds !== undefined) {
           await manager.delete(ProductTypeAssignment, {
-            productId: existingProduct.id,
+            productId: lockedProduct.id,
           });
           await manager.save(
             ProductTypeAssignment,
             productTypeIds.map((productTypeId) => ({
-              productId: existingProduct.id,
+              productId: lockedProduct.id,
               productTypeId,
             })),
           );
         }
         if (discounts !== undefined) {
           await manager.delete(Discount, {
-            productId: existingProduct.id,
+            productId: lockedProduct.id,
           });
 
           const discountRow = discounts.map((d) => ({
@@ -580,19 +609,19 @@ export class ProductsService {
             maximumDiscountQuantity: d.noUpperLimit
               ? null
               : d.maximumDiscountQuantity,
-            productId: existingProduct.id,
+            productId: lockedProduct.id,
           }));
           await manager.save(Discount, discountRow);
         }
         if (deletedImageKeys !== undefined) {
           await manager.delete(Image, {
             fileKey: In(deletedImageKeys),
-            productId: existingProduct.id,
+            productId: lockedProduct.id,
           });
         }
         const remainingImages = await manager.find(Image, {
           where: {
-            productId: existingProduct.id,
+            productId: lockedProduct.id,
           },
         });
         const startingPoint =
@@ -603,7 +632,7 @@ export class ProductsService {
 
         const hasThumbnail = remainingImages.some((image) => image.isThumbnail);
         const newRows = uploaded.map((file, index) => ({
-          productId: existingProduct.id,
+          productId: lockedProduct.id,
           url: file.url,
           fileKey: file.key,
           displayOrder: startingPoint + index,
