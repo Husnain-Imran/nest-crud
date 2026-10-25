@@ -39,7 +39,7 @@ export class CreateProductDto {
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   sku?: string;
   @IsOptional()
-  @IsNumber()
+  @IsInt()
   sortOrder?: number;
 
   // flags for product status
