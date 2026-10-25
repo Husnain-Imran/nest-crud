@@ -187,8 +187,9 @@ export class ProductsService {
 
     // Phase 2 transcations (use only manager inside )
 
+    let productId;
     try {
-      const productId = await this.dataSource.transaction(async (manager) => {
+      productId = await this.dataSource.transaction(async (manager) => {
         // position logic
 
         const max = (await manager.maximum(Product, 'sortOrder')) ?? 0;
@@ -248,22 +249,22 @@ export class ProductsService {
         }
         return product.id;
       });
-      const createdProduct = await this.ProductRepo.findOne({
-        where: { id: productId },
-        relations: {
-          images: true,
-          productTypeAssignment: true,
-          categoryAssigments: true,
-          discounts: true,
-          createdBy: true,
-        },
-      });
-      return createdProduct;
     } catch (err) {
-      this.safeDelete(uploaded.map((r) => r.key));
+      await this.safeDelete(uploaded.map((r) => r.key));
 
-      return err;
+      throw err;
     }
+    const createdProduct = await this.ProductRepo.findOne({
+      where: { id: productId },
+      relations: {
+        images: true,
+        productTypeAssignment: true,
+        categoryAssigments: true,
+        discounts: true,
+        createdBy: true,
+      },
+    });
+    return createdProduct;
   }
 
   async findAll(searchProductDto: SearchProductDto) {
