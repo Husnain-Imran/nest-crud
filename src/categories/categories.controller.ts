@@ -36,12 +36,12 @@ export class CategoriesController {
     return this.categoriesService.findAll(searchCategoryDto);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin)
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.categoriesService.findOne(+id);
-  }
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Roles(Role.Admin)
+  // @Get(':id')
+  // findOne(@Param('id') id: string) {
+  //   return this.categoriesService.findOne(+id);
+  // }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)

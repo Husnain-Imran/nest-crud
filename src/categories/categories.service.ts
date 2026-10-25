@@ -30,10 +30,6 @@ export class CategoriesService {
     return { items, total, page, limit, totalPage: Math.ceil(total / limit) };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} category`;
-  }
-
   async update(id: string, updateCategoryDto: UpdateCategoryDto) {
     const category = await this.categoryRepo.findOne({
       where: {
