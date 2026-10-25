@@ -504,17 +504,26 @@ export class ProductsService {
     }
     try {
       const productId = await this.dataSource.transaction(async (manager) => {
+        let lockedProduct: Product | null;
         // 1. Lock every row that participates in ordering
-        await manager
-          .createQueryBuilder(Product, 'p')
-          .setLock('pessimistic_write')
-          .getMany();
-        // Lock this row — any other transaction trying to read/write this
-        // same product will block until this transaction finishes.
-        const lockedProduct = await manager.findOne(Product, {
-          where: { id: existingProduct.id },
-          relations: { images: true },
-        });
+        if (hasSortOrder) {
+          await manager
+            .createQueryBuilder(Product, 'p')
+            .setLock('pessimistic_write')
+            .getMany();
+
+          lockedProduct = await manager.findOne(Product, {
+            where: { id: existingProduct.id },
+            relations: { images: true },
+          });
+        } else {
+          // Ordinary edit — only this one product needs to be locked.
+          lockedProduct = await manager.findOne(Product, {
+            where: { id: existingProduct.id },
+            relations: { images: true },
+            lock: { mode: 'pessimistic_write' },
+          });
+        }
 
         if (!lockedProduct) {
           throw new NotFoundException('Product not found');
