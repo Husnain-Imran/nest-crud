@@ -308,14 +308,28 @@ export class ProductsService {
       });
     }
     if (productTypeId?.length) {
-      query.andWhere('productType.id IN (:...productTypeId)', {
-        productTypeId,
-      });
+      query.andWhere(
+        `EXISTS ${query
+          .subQuery()
+          .select('1')
+          .from(ProductTypeAssignment, 'productTypeFilter')
+          .where('productTypeFilter.productId = product.id')
+          .andWhere('productTypeFilter.productTypeId IN (:...productTypeId)')
+          .getQuery()}`,
+        { productTypeId },
+      );
     }
     if (categoryId?.length) {
-      query.andWhere('category.id IN (:...categoryId)', {
-        categoryId,
-      });
+      query.andWhere(
+        `EXISTS ${query
+          .subQuery()
+          .select('1')
+          .from(CategoryAssignment, 'categoryFilter')
+          .where('categoryFilter.productId = product.id')
+          .andWhere('categoryFilter.categoryId IN (:...categoryId)')
+          .getQuery()}`,
+        { categoryId },
+      );
     }
     query.skip((page - 1) * limit);
     query.take(limit);
