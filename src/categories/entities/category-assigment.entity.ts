@@ -16,7 +16,9 @@ export class CategoryAssignment {
   @JoinColumn({ name: 'category_id' })
   category!: Category;
 
-  @ManyToOne(() => Product, (product) => product.categoryAssigments)
+  @ManyToOne(() => Product, (product) => product.categoryAssigments, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'product_id' })
   product!: Product;
 }

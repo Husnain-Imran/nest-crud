@@ -290,7 +290,7 @@ export class ProductsService {
 
     if (search) {
       query.andWhere(
-        '(product.title ILIKE :search OR product.sku ILIKE :search)',
+        '(product.title LIKE :search OR product.sku LIKE :search)',
         {
           search: `%${search}%`,
         },
@@ -316,7 +316,7 @@ export class ProductsService {
         categoryId,
       });
     }
-    query.skip(page - 1 * limit);
+    query.skip((page - 1) * limit);
     query.take(limit);
     const [products, total] = await query.getManyAndCount();
     return {
@@ -328,8 +328,26 @@ export class ProductsService {
     };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} product`;
+  async findOne(id: string) {
+    const product = await this.ProductRepo.findOne({
+      where: {
+        id,
+      },
+      relations: {
+        images: true,
+        categoryAssigments: {
+          category: true,
+        },
+        productTypeAssignment: {
+          productType: true,
+        },
+        discounts: true,
+      },
+    });
+    if (!product) {
+      throw new BadRequestException('no product found against this id ');
+    }
+    return product;
   }
 
   async update(
@@ -630,7 +648,32 @@ export class ProductsService {
     });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} product`;
+  async remove(id: string) {
+    const product = await this.ProductRepo.findOne({
+      where: {
+        id,
+      },
+      relations: {
+        images: true,
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException(`Product #${id} not found`);
+    }
+
+    // 3. Delete the product (DB cascade removes images, discounts, etc.)
+    await this.ProductRepo.delete(id);
+
+    const keys = product.images.map((image) => image.fileKey);
+    if (keys.length > 0) {
+      try {
+        await this.safeDelete(keys);
+      } catch (err) {
+        console.error(`Failed to delete files for product #${id}`, keys, err);
+      }
+    }
+
+    return { message: `Product #${id} deleted` };
   }
 }

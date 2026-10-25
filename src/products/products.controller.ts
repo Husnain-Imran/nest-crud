@@ -61,15 +61,17 @@ export class ProductsController {
     console.log('files', files);
     return this.productsService.create(createProductDto, user, files);
   }
-
+  @UseGuards(JwtAuthGuard)
+  @Roles(Role.Admin)
   @Get()
   findAll(@Query() productDto: SearchProductDto) {
     return this.productsService.findAll(productDto);
   }
-
+  @UseGuards(JwtAuthGuard)
+  @Roles(Role.Admin)
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.productsService.findOne(+id);
+    return this.productsService.findOne(id);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -102,7 +104,9 @@ export class ProductsController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @Roles(Role.Admin)
   remove(@Param('id') id: string) {
-    return this.productsService.remove(+id);
+    return this.productsService.remove(id);
   }
 }
