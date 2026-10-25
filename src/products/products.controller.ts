@@ -29,11 +29,12 @@ import {
 import { uploadFiles } from 'uploadthing/client-future';
 import { ParseDataFieldInterceptor } from './interceptor/parse-data-field.interceptor';
 import { SearchProductDto } from './dto/search-product.dto';
+import { RolesGuard } from 'src/users/guards/roles.guard';
 
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @UseInterceptors(
     FilesInterceptor('images', MAX_IMAGE_PER_PRODUCT, {
       limits: { fileSize: MAX_IMAGE_SIZE_BYTES },
@@ -61,20 +62,20 @@ export class ProductsController {
     console.log('files', files);
     return this.productsService.create(createProductDto, user, files);
   }
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)
   @Get()
   findAll(@Query() productDto: SearchProductDto) {
     return this.productsService.findAll(productDto);
   }
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.productsService.findOne(id);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @UseInterceptors(
     FilesInterceptor('images', MAX_IMAGE_PER_PRODUCT, {
       limits: { fileSize: MAX_IMAGE_SIZE_BYTES },
@@ -104,7 +105,7 @@ export class ProductsController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)
   remove(@Param('id') id: string) {
     return this.productsService.remove(id);
