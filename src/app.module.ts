@@ -13,6 +13,7 @@ import { ProductsModule } from './products/products.module';
 import { ProductTypesModule } from './product-types/product-types.module';
 import { CategoriesModule } from './categories/categories.module';
 import { UploadthingModule } from './uploadthing/uploadthing.module';
+import { InventoryModule } from './inventory/inventory.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { UploadthingModule } from './uploadthing/uploadthing.module';
     ProductsModule,
     ProductTypesModule,
     CategoriesModule,
+    InventoryModule,
   ],
   controllers: [AppController],
   providers: [
