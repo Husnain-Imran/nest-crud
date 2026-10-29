@@ -1,6 +1,6 @@
 import { Exclude } from 'class-transformer';
-
 import { Book } from 'src/books/entity/book.entity';
+import { InventoryLedger } from 'src/inventory/entities/InventoryLedger.entity';
 import { Product } from 'src/products/entities/product.entity';
 import {
   Column,
