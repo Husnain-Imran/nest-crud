@@ -3,7 +3,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from 'node_modules/@nestjs/typeorm/dist/typeorm.module';
 import { AuthModule } from './auth/auth.module';
 import { SerializeInterceptor } from './interceptor/serializeInterceptor';
 import { APP_INTERCEPTOR } from '@nestjs/core';
@@ -12,8 +11,8 @@ import { BooksModule } from './books/books.module';
 import { ProductsModule } from './products/products.module';
 import { ProductTypesModule } from './product-types/product-types.module';
 import { CategoriesModule } from './categories/categories.module';
-import { UploadthingModule } from './uploadthing/uploadthing.module';
 import { InventoryModule } from './inventory/inventory.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
   imports: [
