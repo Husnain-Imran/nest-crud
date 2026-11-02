@@ -11,10 +11,12 @@ import { CategoryAssignment } from 'src/categories/entities/category-assigment.e
 import { Discount } from './entities/discount.entity';
 import { UploadthingService } from 'src/uploadthing/uploadthing.service';
 import { UploadthingModule } from 'src/uploadthing/uploadthing.module';
+import { InventoryModule } from 'src/inventory/inventory.module';
 
 @Module({
   imports: [
     UploadthingModule,
+    InventoryModule,
     TypeOrmModule.forFeature([
       Product,
       ProductType,
