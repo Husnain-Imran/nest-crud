@@ -8,5 +8,5 @@ export enum StockSource {
   SYSTEM_CORRECTION = 'system_correction',
   DAMAGE = 'damage',
   RETURN = 'return',
+  RESTOCK = 'restock',
 }
- 

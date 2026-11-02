@@ -10,6 +10,8 @@ import { DataSource } from 'typeorm';
 import { Product } from 'src/products/entities/product.entity';
 import { StockChangeType, StockSource } from './enums/inventory.enum';
 import { InventoryLedger } from './entities/InventoryLedger.entity';
+import { User } from 'src/users/entities/user.entity';
+import { AdjustStockDto } from './dto/adjust-stock.dto';
 
 @Injectable()
 export class InventoryService {
@@ -80,6 +82,57 @@ export class InventoryService {
       },
     );
     return { balance: newStock, ledger: inventory };
+  }
+
+  async setStock(productId: string, dto: AdjustStockDto, user: User) {
+    await this.dataSource.transaction(async (manager) => {
+      const product = await manager.findOne(Product, {
+        where: { id: productId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!product) {
+        throw new NotFoundException('Product not found');
+      }
+      if (!product.inventoryEnabled) {
+        throw new BadRequestException(
+          'Inventory is not enabled for this product',
+        );
+      }
+      const difference = dto.newStock - product.currentStock;
+      if (difference === 0) {
+        throw new BadRequestException('New stock is the same as current stock');
+      }
+      const changeType =
+        difference > 0 ? StockChangeType.INCREASE : StockChangeType.DECREASE;
+      if (
+        (dto.source === StockSource.RETURN ||
+          dto.source === StockSource.RESTOCK) &&
+        changeType === StockChangeType.DECREASE
+      ) {
+        throw new BadRequestException(
+          `Cannot decrease stock with source ${dto.source}. Only increase is allowed.`,
+        );
+      }
+      if (
+        dto.source === StockSource.DAMAGE &&
+        changeType === StockChangeType.INCREASE
+      ) {
+        throw new BadRequestException(
+          `Cannot increase stock with source ${dto.source}. Only decrease is allowed.`,
+        );
+      }
+
+      await this.applyStockChange({
+        manager,
+        productId,
+        changeType,
+        quantity: Math.abs(difference),
+        source: dto.source,
+        performedBy: user,
+        note: dto.note ?? null,
+      });
+    });
+    return { message: 'Stock updated successfully' };
   }
 
   findAll() {

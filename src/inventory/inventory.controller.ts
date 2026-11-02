@@ -1,20 +1,37 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
 import { InventoryService } from './inventory.service';
 import { CreateInventoryDto } from './dto/create-inventory.dto';
 import { UpdateInventoryDto } from './dto/update-inventory.dto';
+import { JwtAuthGuard } from 'src/auth/guard/JwtAuthGuard';
+import { RolesGuard } from 'src/users/guards/roles.guard';
+import { Role } from 'src/users/enums/Role.enum';
+import { Roles } from 'src/users/decorators/role.decorator';
+import { AdjustStockDto } from './dto/adjust-stock.dto';
+import { User } from 'src/users/entities/user.entity';
+import { CurrentUser } from 'src/users/decorators/current-user.decorator';
 
 @Controller('inventory')
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
 
-  @Post()
-  create(@Body() createInventoryDto: CreateInventoryDto) {
-    return this.inventoryService.create(createInventoryDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.inventoryService.findAll();
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Admin)
+  @Patch('adjust-stock/:productId')
+  adjustStock(
+    @Param('productId') productId: string,
+    @Body() adjustStockDto: AdjustStockDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.inventoryService.setStock(productId, adjustStockDto, user);
   }
 
   @Get(':id')
@@ -23,7 +40,10 @@ export class InventoryController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateInventoryDto: UpdateInventoryDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateInventoryDto: UpdateInventoryDto,
+  ) {
     return this.inventoryService.update(+id, updateInventoryDto);
   }
 
