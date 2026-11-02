@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
 import { CreateInventoryDto } from './dto/create-inventory.dto';
@@ -27,7 +28,7 @@ export class InventoryController {
   @Roles(Role.Admin)
   @Patch('adjust-stock/:productId')
   adjustStock(
-    @Param('productId') productId: string,
+    @Param('productId', ParseUUIDPipe) productId: string,
     @Body() adjustStockDto: AdjustStockDto,
     @CurrentUser() user: User,
   ) {
