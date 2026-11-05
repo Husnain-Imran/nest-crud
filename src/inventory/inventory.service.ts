@@ -6,16 +6,22 @@ import {
 import { CreateInventoryDto } from './dto/create-inventory.dto';
 import { UpdateInventoryDto } from './dto/update-inventory.dto';
 import { ApplyStockChangeType } from './types/InventoryTypes';
-import { DataSource } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Product } from 'src/products/entities/product.entity';
 import { StockChangeType, StockSource } from './enums/inventory.enum';
 import { InventoryLedger } from './entities/InventoryLedger.entity';
 import { User } from 'src/users/entities/user.entity';
 import { AdjustStockDto } from './dto/adjust-stock.dto';
+import { GetHistoryDto } from './dto/get-history-dto';
+import { InjectRepository } from 'node_modules/@nestjs/typeorm/dist/common/typeorm.decorators';
 
 @Injectable()
 export class InventoryService {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    @InjectRepository(InventoryLedger)
+    private readonly inventoryLedgerRepository: Repository<InventoryLedger>,
+  ) {}
   async applyStockChange(applyStockChangeInput: ApplyStockChangeType) {
     if (
       !Number.isInteger(applyStockChangeInput.quantity) ||
@@ -134,20 +140,68 @@ export class InventoryService {
     });
     return { message: 'Stock updated successfully' };
   }
-
-  findAll() {
-    return `This action returns all inventory`;
+  async updateThreshold(productId: string, newThreshold: number | null) {
+    const product = await this.dataSource.manager.findOne(Product, {
+      where: { id: productId },
+    });
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+    if (!product.inventoryEnabled) {
+      throw new BadRequestException(
+        'Inventory is not enabled for this product',
+      );
+    }
+    await this.dataSource.manager.update(Product, productId, {
+      lowStockThreshold: newThreshold,
+    });
+    return { message: 'Low stock threshold updated successfully' };
   }
+  async getHistory(dto: GetHistoryDto, productId?: string) {
+    const { source, changeType, startDate, endDate, page, limit } = dto;
 
-  findOne(id: number) {
-    return `This action returns a #${id} inventory`;
-  }
+    const query = this.inventoryLedgerRepository.createQueryBuilder('ledger');
+    query
+      .leftJoin('ledger.performedBy', 'user')
+      .leftJoin('ledger.product', 'product')
+      .addSelect([
+        'user.id',
+        'user.name',
+        'user.email',
+        'product.id',
+        'product.title',
+        'product.sku',
+      ]);
 
-  update(id: number, updateInventoryDto: UpdateInventoryDto) {
-    return `This action updates a #${id} inventory`;
-  }
+    if (productId) {
+      query.andWhere('ledger.productId = :productId', { productId });
+    }
+    if (source) {
+      query.andWhere('ledger.source = :source', { source });
+    }
+    if (changeType) {
+      query.andWhere('ledger.stockChangeType = :changeType', { changeType });
+    }
+    if (startDate) {
+      query.andWhere('ledger.createdAt >= :startDate', { startDate });
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setDate(end.getDate() + 1);
+      query.andWhere('ledger.createdAt < :end', { end });
+    }
+    const [items, total] = await query
+      .orderBy('ledger.createdAt', 'DESC') // 1. newest first
+      .addOrderBy('ledger.id', 'DESC') // 2. if createdAt is equal, use id to decide
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
 
-  remove(id: number) {
-    return `This action removes a #${id} inventory`;
+    return {
+      items,
+      total,
+      page,
+      limit,
+    };
   }
 }
