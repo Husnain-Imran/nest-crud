@@ -22,6 +22,11 @@ import { CategoryAssignment } from 'src/categories/entities/category-assigment.e
 import { Image } from './entities/Image.entity';
 import { MAX_IMAGE_PER_PRODUCT } from './constants/image.constant';
 import { SearchProductDto } from './dto/search-product.dto';
+import { InventoryService } from 'src/inventory/inventory.service';
+import {
+  StockChangeType,
+  StockSource,
+} from 'src/inventory/enums/inventory.enum';
 
 @Injectable()
 export class ProductsService {
@@ -38,6 +43,7 @@ export class ProductsService {
     private readonly UploadthingService: UploadthingService,
 
     private readonly dataSource: DataSource,
+    private readonly inventoryService: InventoryService,
   ) {}
   private validateDiscount(discounts: CreateDiscountDto[] = []) {
     for (const [index, discount] of discounts.entries()) {
@@ -132,6 +138,8 @@ export class ProductsService {
       categoryIds,
       productTypeIds,
       sortOrder,
+      initialStockQuantity,
+      lowStockThreshold,
       ...productData
     } = createProductDto;
 
@@ -210,8 +218,26 @@ export class ProductsService {
           floorPrice,
           sortOrder: position,
           createdBy: user,
+          lowStockThreshold: productData.inventoryEnabled
+            ? lowStockThreshold
+            : null,
         });
         await manager.save(product);
+        if (
+          productData.inventoryEnabled &&
+          initialStockQuantity &&
+          initialStockQuantity > 0
+        ) {
+          await this.inventoryService.applyStockChange({
+            manager,
+            productId: product.id,
+            changeType: StockChangeType.INCREASE,
+            quantity: initialStockQuantity,
+            source: StockSource.ADMIN_MANUAL,
+            performedBy: user,
+            note: 'Initial stock',
+          });
+        }
 
         const productTypeRow = productTypeIds.map((productTypeId) => ({
           productId: product.id,

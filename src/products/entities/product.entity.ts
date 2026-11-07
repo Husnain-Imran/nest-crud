@@ -1,10 +1,12 @@
 import {
   Column,
+  CreateDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { ProductTypeAssignment } from '../../product-types/entities/product-type-assigmnent.entity';
 import { CategoryAssignment } from 'src/categories/entities/category-assigment.entity';
@@ -12,6 +14,7 @@ import { Image } from './Image.entity';
 import { Discount } from './discount.entity';
 import { User } from 'src/users/entities/user.entity';
 import { decimalTransformer } from '../helpers/product.helper';
+import { InventoryLedger } from 'src/inventory/entities/InventoryLedger.entity';
 
 @Entity()
 export class Product {
@@ -74,7 +77,16 @@ export class Product {
     transformer: decimalTransformer,
   })
   ceilingPrice!: number;
-
+  @Column({
+    type: 'int',
+    default: 0,
+  })
+  currentStock!: number;
+  @Column({
+    type: 'int',
+    nullable: true,
+  })
+  lowStockThreshold?: number | null;
   @OneToMany(() => ProductTypeAssignment, (assignment) => assignment.product)
   productTypeAssignment!: ProductTypeAssignment[];
 
@@ -90,4 +102,12 @@ export class Product {
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'created_by' })
   createdBy?: User;
+  @OneToMany(() => InventoryLedger, (Ledger) => Ledger.product)
+  inventoryLedger!: InventoryLedger[];
+
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt!: Date;
+
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt!: Date;
 }
