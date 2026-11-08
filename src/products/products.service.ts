@@ -735,6 +735,7 @@ export class ProductsService {
   }
 
   async remove(id: string) {
+    let imageKeys: string[] = [];
     await this.dataSource.transaction(async (manager) => {
       //load the product with the given id and lock it for update
       const product = await manager.findOne(Product, {
@@ -744,6 +745,8 @@ export class ProductsService {
       if (!product) {
         throw new NotFoundException('Product not found');
       }
+      const images = await manager.find(Image, { where: { productId: id } });
+      imageKeys = images.map((image) => image.fileKey);
       if (product.sortOrder !== null && product.sortOrder !== undefined) {
         await manager.decrement(
           Product, // 1. which table
@@ -752,8 +755,11 @@ export class ProductsService {
           1, // 4. how much to sub
         );
       }
+      await manager.update(Product, { id }, { sku: null });
       await manager.softDelete(Product, { id });
     });
+    // If a restore function is added later, remove this safeDelete so the images can be recovered with the product.
+    await this.safeDelete(imageKeys);
     return {
       message: `Product #${id} deleted successfully`,
     };

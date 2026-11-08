@@ -35,7 +35,7 @@ export class Product {
   concentration?: string;
 
   @Column({ nullable: true, unique: true })
-  sku?: string;
+  sku?: string | null;
 
   @Column({ type: 'int', nullable: true })
   sortOrder!: number;
