@@ -13,7 +13,14 @@ import { User } from 'src/users/entities/user.entity';
 import { CreateDiscountDto } from './dto/create.disocunt.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ProductType } from 'src/product-types/entities/product-type.entity';
-import { Between, In, MoreThanOrEqual, Not, Repository } from 'typeorm';
+import {
+  Between,
+  In,
+  MoreThan,
+  MoreThanOrEqual,
+  Not,
+  Repository,
+} from 'typeorm';
 import { Category } from 'src/categories/entities/category.entity';
 import { Product } from './entities/product.entity';
 import { DataSource } from 'typeorm';
@@ -22,6 +29,11 @@ import { CategoryAssignment } from 'src/categories/entities/category-assigment.e
 import { Image } from './entities/Image.entity';
 import { MAX_IMAGE_PER_PRODUCT } from './constants/image.constant';
 import { SearchProductDto } from './dto/search-product.dto';
+import { InventoryService } from 'src/inventory/inventory.service';
+import {
+  StockChangeType,
+  StockSource,
+} from 'src/inventory/enums/inventory.enum';
 
 @Injectable()
 export class ProductsService {
@@ -38,6 +50,7 @@ export class ProductsService {
     private readonly UploadthingService: UploadthingService,
 
     private readonly dataSource: DataSource,
+    private readonly inventoryService: InventoryService,
   ) {}
   private validateDiscount(discounts: CreateDiscountDto[] = []) {
     for (const [index, discount] of discounts.entries()) {
@@ -132,6 +145,8 @@ export class ProductsService {
       categoryIds,
       productTypeIds,
       sortOrder,
+      initialStockQuantity,
+      lowStockThreshold,
       ...productData
     } = createProductDto;
 
@@ -210,8 +225,26 @@ export class ProductsService {
           floorPrice,
           sortOrder: position,
           createdBy: user,
+          lowStockThreshold: productData.inventoryEnabled
+            ? lowStockThreshold
+            : null,
         });
         await manager.save(product);
+        if (
+          productData.inventoryEnabled &&
+          initialStockQuantity &&
+          initialStockQuantity > 0
+        ) {
+          await this.inventoryService.applyStockChange({
+            manager,
+            productId: product.id,
+            changeType: StockChangeType.INCREASE,
+            quantity: initialStockQuantity,
+            source: StockSource.ADMIN_MANUAL,
+            performedBy: user,
+            note: 'Initial stock',
+          });
+        }
 
         const productTypeRow = productTypeIds.map((productTypeId) => ({
           productId: product.id,
@@ -702,31 +735,33 @@ export class ProductsService {
   }
 
   async remove(id: string) {
-    const product = await this.ProductRepo.findOne({
-      where: {
-        id,
-      },
-      relations: {
-        images: true,
-      },
-    });
-
-    if (!product) {
-      throw new NotFoundException(`Product #${id} not found`);
-    }
-
-    // 3. Delete the product (DB cascade removes images, discounts, etc.)
-    await this.ProductRepo.delete(id);
-
-    const keys = product.images.map((image) => image.fileKey);
-    if (keys.length > 0) {
-      try {
-        await this.safeDelete(keys);
-      } catch (err) {
-        console.error(`Failed to delete files for product #${id}`, keys, err);
+    let imageKeys: string[] = [];
+    await this.dataSource.transaction(async (manager) => {
+      //load the product with the given id and lock it for update
+      const product = await manager.findOne(Product, {
+        where: { id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!product) {
+        throw new NotFoundException('Product not found');
       }
-    }
-
-    return { message: `Product #${id} deleted` };
+      const images = await manager.find(Image, { where: { productId: id } });
+      imageKeys = images.map((image) => image.fileKey);
+      if (product.sortOrder !== null && product.sortOrder !== undefined) {
+        await manager.decrement(
+          Product, // 1. which table
+          { sortOrder: MoreThan(product.sortOrder) }, // 2. which rows (the WHERE)
+          'sortOrder', // 3. which column to change
+          1, // 4. how much to sub
+        );
+      }
+      await manager.update(Product, { id }, { sku: null });
+      await manager.softDelete(Product, { id });
+    });
+    // If a restore function is added later, remove this safeDelete so the images can be recovered with the product.
+    await this.safeDelete(imageKeys);
+    return {
+      message: `Product #${id} deleted successfully`,
+    };
   }
 }
