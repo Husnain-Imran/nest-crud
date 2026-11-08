@@ -34,7 +34,7 @@ export class Product {
   @Column({ nullable: true })
   concentration?: string;
 
-  @Column({ nullable: true, unique: true })
+  @Column({ type: 'varchar', nullable: true, unique: true })
   sku?: string | null;
 
   @Column({ type: 'int', nullable: true })
