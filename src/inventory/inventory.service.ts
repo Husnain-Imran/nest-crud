@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -13,13 +14,12 @@ import { InventoryLedger } from './entities/InventoryLedger.entity';
 import { User } from 'src/users/entities/user.entity';
 import { AdjustStockDto } from './dto/adjust-stock.dto';
 import { GetHistoryDto } from './dto/get-history-dto';
-import { InjectRepository } from 'node_modules/@nestjs/typeorm/dist/common/typeorm.decorators';
 
 @Injectable()
 export class InventoryService {
   constructor(
     private readonly dataSource: DataSource,
-    @InjectRepository(InventoryLedger)
+    @Inject('InventoryLedgerRepository')
     private readonly inventoryLedgerRepository: Repository<InventoryLedger>,
   ) {}
   async applyStockChange(applyStockChangeInput: ApplyStockChangeType) {
@@ -160,7 +160,9 @@ export class InventoryService {
   async getHistory(dto: GetHistoryDto, productId?: string) {
     const { source, changeType, startDate, endDate, page, limit } = dto;
 
-    const query = this.inventoryLedgerRepository.createQueryBuilder('ledger');
+    const query = this.inventoryLedgerRepository
+      .createQueryBuilder('ledger')
+      .withDeleted();
     query
       .leftJoin('ledger.performedBy', 'user')
       .leftJoin('ledger.product', 'product')
@@ -171,6 +173,7 @@ export class InventoryService {
         'product.id',
         'product.title',
         'product.sku',
+        'product.deletedAt',
       ]);
 
     if (productId) {
@@ -187,7 +190,10 @@ export class InventoryService {
     }
     if (endDate) {
       const end = new Date(endDate);
-      end.setDate(end.getDate() + 1);
+      const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(endDate);
+      if (isDateOnly) {
+        end.setUTCDate(end.getUTCDate() + 1);
+      }
       query.andWhere('ledger.createdAt < :end', { end });
     }
     const [items, total] = await query
