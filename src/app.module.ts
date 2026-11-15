@@ -14,18 +14,14 @@ import { CategoriesModule } from './categories/categories.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { throttlerConfig } from './config/throttler.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60 * 1000, // 1 minute
-        limit: 100,
-      },
-    ]),
+    ThrottlerModule.forRoot(throttlerConfig),
 
     UsersModule,
     AuthModule,
