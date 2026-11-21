@@ -1,8 +1,8 @@
-import { Inject, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { SerializeInterceptor } from './interceptor/serializeInterceptor';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
@@ -15,6 +15,7 @@ import { InventoryModule } from './inventory/inventory.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { throttlerConfig } from './config/throttler.config';
+import { dataSourceConfig } from './database/data-source';
 
 @Module({
   imports: [
@@ -22,23 +23,9 @@ import { throttlerConfig } from './config/throttler.config';
       isGlobal: true,
     }),
     ThrottlerModule.forRoot(throttlerConfig),
-
     UsersModule,
     AuthModule,
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'mysql',
-        host: configService.get<string>('DB_HOST'),
-        port: configService.get<number>('DB_PORT'),
-        username: configService.get<string>('DB_USER'),
-        password: configService.get<string>('DB_PASSWORD'),
-        database: configService.get<string>('DB_NAME'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: true,
-      }),
-    }),
+    TypeOrmModule.forRoot(dataSourceConfig),
     BooksModule,
     ProductsModule,
     ProductTypesModule,
