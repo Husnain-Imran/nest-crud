@@ -32,7 +32,7 @@ _Last updated: 2026-11-24_
 - **Cleanup first:** small, quick fixes and a proof that the compiled build (`node dist/main`) runs, since that's what Docker will run.
 - **Docker before Better Auth:** the Dockerfile and Compose setup don't depend on auth, and Docker gives a throwaway MySQL to test the auth migrations safely.
 - **Better Auth before AWS:** it will likely change the user id type (`created_by`, `performed_by` FKs) and move to cookies (CORS `credentials`, cookie flags, CSRF). Doing that on a deployed database is much harder, so deploy once with the final auth.
-- **Deploy before orders:** every later feature then also practices deploys, logs and debugging, and it gives a live project for Upwork.
+- **Deploy before orders:** every later feature then also practices deploys, logs and debugging, and it gives a live project to show on the KPI board.
 - **Reps → orders → commission:** commission rules can't be tested without real orders.
 
 ## Phase 0: Cleanup
