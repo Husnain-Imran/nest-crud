@@ -1,15 +1,13 @@
 import {
-  IsEnum,
   IsIn,
   IsInt,
-  IsNotEmpty,
   IsOptional,
   Max,
   Min,
   IsString,
   MaxLength,
 } from 'class-validator';
-import { StockChangeType, StockSource } from '../enums/inventory.enum';
+import { StockSource } from '../enums/inventory.enum';
 
 export class AdjustStockDto {
   @IsInt()

@@ -4,7 +4,6 @@ import { UsersController } from './users.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { APP_INTERCEPTOR } from '@nestjs/core';
-import { CurrentUserInterceptor } from 'src/interceptor/current-user.interceptor';
 
 @Module({
   imports: [TypeOrmModule.forFeature([User])],

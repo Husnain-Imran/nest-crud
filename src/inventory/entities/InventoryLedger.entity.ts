@@ -5,13 +5,11 @@ import {
   Index,
   JoinColumn,
   ManyToOne,
-  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { StockSource, StockChangeType } from '../enums/inventory.enum';
 import { User } from 'src/users/entities/user.entity';
 import { Product } from 'src/products/entities/product.entity';
-import { decimalTransformer } from 'src/products/helpers/product.helper';
 
 @Index(['productId', 'createdAt'])
 @Entity()

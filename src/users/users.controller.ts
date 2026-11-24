@@ -5,7 +5,6 @@ import { Serialize } from 'src/interceptor/serializeInterceptor';
 import { JwtAuthGuard } from 'src/auth/guard/JwtAuthGuard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { User } from './entities/user.entity';
-import { serialize } from 'v8';
 
 @Controller('users')
 export class UsersController {

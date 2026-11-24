@@ -1,4 +1,4 @@
-import { UploadResult, UploadSuccess } from './../uploadthing/types/types';
+import { UploadSuccess } from './../uploadthing/types/types';
 import { UploadthingService } from './../uploadthing/uploadthing.service';
 import { Discount } from 'src/products/entities/discount.entity';
 import {

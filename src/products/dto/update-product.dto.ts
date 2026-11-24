@@ -4,8 +4,6 @@ import {
   ArrayUnique,
   IsArray,
   IsOptional,
-  IsString,
-  IsUUID,
 } from 'class-validator';
 
 export class UpdateProductDto extends PartialType(

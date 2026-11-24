@@ -1,4 +1,3 @@
-import { Entity } from 'typeorm';
 import { Module } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { ProductsController } from './products.controller';
@@ -9,7 +8,6 @@ import { ProductTypeAssignment } from 'src/product-types/entities/product-type-a
 import { Category } from 'src/categories/entities/category.entity';
 import { CategoryAssignment } from 'src/categories/entities/category-assigment.entity';
 import { Discount } from './entities/discount.entity';
-import { UploadthingService } from 'src/uploadthing/uploadthing.service';
 import { UploadthingModule } from 'src/uploadthing/uploadthing.module';
 import { InventoryModule } from 'src/inventory/inventory.module';
 

@@ -17,7 +17,7 @@ _Last updated: 2026-11-24_
 
 | # | Phase | Est. | Target |
 |---|---|---|---|
-| 0 | Cleanup: `src/` imports | ~3 h | Week 1 |
+| 0 | Cleanup: small leftovers | ~1 h | Week 1 |
 | 1 | Docker (Lessons 2 to 9) | 12 to 15 h | Weeks 1 to 2 |
 | 2 | Hardening | 3 to 4 h | Week 2 |
 | 3 | Better Auth | plan TBD | Weeks 3 to 4 |
@@ -29,7 +29,7 @@ _Last updated: 2026-11-24_
 
 ### Why this order
 
-- **Cleanup first:** the compiled build (`node dist/main`) cannot resolve `src/...` imports, so Docker can't run the app.
+- **Cleanup first:** small, quick fixes and a proof that the compiled build (`node dist/main`) runs, since that's what Docker will run.
 - **Docker before Better Auth:** the Dockerfile and Compose setup don't depend on auth, and Docker gives a throwaway MySQL to test the auth migrations safely.
 - **Better Auth before AWS:** it will likely change the user id type (`created_by`, `performed_by` FKs) and move to cookies (CORS `credentials`, cookie flags, CSRF). Doing that on a deployed database is much harder, so deploy once with the final auth.
 - **Deploy before orders:** every later feature then also practices deploys, logs and debugging, and it gives a live project for Upwork.
@@ -37,11 +37,15 @@ _Last updated: 2026-11-24_
 
 ## Phase 0: Cleanup
 
-- [ ] Replace `from 'src/...'` with relative paths (26 files found on 2026-11-24, search `from 'src/`)
-- [ ] Remove `paths` from `tsconfig.json` and the Jest `moduleNameMapper` (`^src/(.*)$`) so leftovers show as errors
-- [ ] VS Code: `typescript.preferences.importModuleSpecifier: "relative"`
-- [ ] Proof: `pnpm build` → `node dist/main` starts; `pnpm test` and `pnpm test:e2e` pass
-- [ ] Small leftovers: pin `@nestjs/mapped-types` (now `"*"`), keep one hashing lib (`argon2` or `bcrypt`), remove stray `console.log`s and unused imports
+- [ ] Proof the build runs: `pnpm build` → `node dist/main` starts
+- [ ] Pin `@nestjs/mapped-types` (now `"*"`)
+- [ ] Keep one hashing lib (`argon2` or `bcrypt`)
+- [ ] Remove stray `console.log`s and unused imports
+
+### Nice to have (not a blocker)
+
+- [ ] Replace `from 'src/...'` with relative paths (26 files on 2026-11-24), then remove `paths` from `tsconfig.json` and the Jest `moduleNameMapper`
+  - Verified 2026-11-24: `nest build` rewrites `src/...` into relative paths in `dist/` (0 `require("src/...")` left), so Docker is **not** blocked. Plain `tsc` would not rewrite them.
 
 ## Phase 1: Docker
 

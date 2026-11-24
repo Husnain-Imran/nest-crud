@@ -20,13 +20,12 @@ import { JwtAuthGuard } from 'src/auth/guard/JwtAuthGuard';
 import { Roles } from 'src/users/decorators/role.decorator';
 import { Role } from 'src/users/enums/Role.enum';
 import { User } from 'src/users/entities/user.entity';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import {
   MAX_IMAGE_SIZE_BYTES,
   ALLOWED_IMAGE_MIME_TYPES,
   MAX_IMAGE_PER_PRODUCT,
 } from './constants/image.constant';
-import { uploadFiles } from 'uploadthing/client-future';
 import { ParseDataFieldInterceptor } from './interceptor/parse-data-field.interceptor';
 import { SearchProductDto } from './dto/search-product.dto';
 import { RolesGuard } from 'src/users/guards/roles.guard';

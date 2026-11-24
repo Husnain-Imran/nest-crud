@@ -3,7 +3,6 @@ import {
   CallHandler,
   ExecutionContext,
   Injectable,
-  NestInterceptor,
 } from '@nestjs/common';
 
 @Injectable()

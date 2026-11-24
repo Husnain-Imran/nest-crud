@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer';
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { IsBoolean } from 'class-validator';
 
 export class SignupResponseDto {
   @Expose()

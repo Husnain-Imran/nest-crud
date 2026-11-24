@@ -4,8 +4,6 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateInventoryDto } from './dto/create-inventory.dto';
-import { UpdateInventoryDto } from './dto/update-inventory.dto';
 import { ApplyStockChangeType } from './types/InventoryTypes';
 import { DataSource, Repository } from 'typeorm';
 import { Product } from 'src/products/entities/product.entity';

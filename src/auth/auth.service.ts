@@ -6,7 +6,6 @@ import { SignInDto } from './dto/signIn.dto';
 import * as bcrypt from 'bcrypt';
 import { SignUpDto } from './dto/signUp.dto';
 import { ConfigService } from '@nestjs/config';
-import { Repository } from 'typeorm/browser/repository/Repository.js';
 @Injectable()
 export class AuthService {
   constructor(

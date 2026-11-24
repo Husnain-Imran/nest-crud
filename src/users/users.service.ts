@@ -4,7 +4,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
-import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -14,8 +13,8 @@ export class UsersService {
   ) {}
 
   async signup(userData: CreateUserDto) {
-    const newUser = await this.userRepo.create(userData);
-    this.userRepo.save(newUser);
+    const newUser = this.userRepo.create(userData);
+    await this.userRepo.save(newUser);
     return newUser;
   }
   async findByEmail(email: string) {

@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, Max, Min, ValidateIf } from 'class-validator';
+import { IsInt, Max, Min, ValidateIf } from 'class-validator';
 
 export class AdjustThresholdDto {
   @ValidateIf((o) => o.newThreshold !== null)
