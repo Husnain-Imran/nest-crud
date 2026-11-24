@@ -17,7 +17,7 @@ _Last updated: 2026-11-24_
 
 | # | Phase | Est. | Target |
 |---|---|---|---|
-| 0 | Cleanup: small leftovers | ~1 h | Week 1 |
+| 0 | Cleanup: small leftovers ✅ | ~1 h | Week 1 |
 | 1 | Docker (Lessons 2 to 9) | 12 to 15 h | Weeks 1 to 2 |
 | 2 | Hardening | 3 to 4 h | Week 2 |
 | 3 | Better Auth | plan TBD | Weeks 3 to 4 |
@@ -37,10 +37,13 @@ _Last updated: 2026-11-24_
 
 ## Phase 0: Cleanup
 
-- [ ] Proof the build runs: `pnpm build` → `node dist/main` starts
-- [ ] Pin `@nestjs/mapped-types` (now `"*"`)
-- [ ] Keep one hashing lib (`argon2` or `bcrypt`)
-- [ ] Remove stray `console.log`s and unused imports
+- [x] Proof the build runs: `pnpm build` → `node dist/main` starts
+- [x] Fix `signup` not awaiting `save` (`users.service.ts`)
+- [x] Pin `@nestjs/mapped-types` (was `"*"`)
+- [x] Keep one hashing lib (removed unused `argon2`, kept `bcrypt`)
+- [x] Remove unused imports (35 in 25 files)
+- [ ] `console.log`s: kept for now on purpose; remove before deploy (Phase 4)
+- [ ] 7 unused variables (`updatedProduct`, `_`, `productId`, ...): optional
 
 ### Nice to have (not a blocker)
 
@@ -55,7 +58,7 @@ _Last updated: 2026-11-24_
 - [ ] 4. Layer caching (copy manifests first, `pnpm install --frozen-lockfile`)
 - [ ] 5. Docker Compose (app + MySQL)
 - [ ] 6. Compose networking (`DB_HOST` = service name) + healthchecks + `depends_on`
-- [ ] 7. Multi-stage build, pinned Node version, non-root user (watch `argon2`/`bcrypt` native builds)
+- [ ] 7. Multi-stage build, pinned Node version (try 24.9+, see unit-test item in Phase 2), non-root user (watch `bcrypt` native build)
 - [ ] 8. Migrations in containers (separate step before app start; compiled data source, no ts-node)
 - [ ] 9. Debugging drills
 
@@ -63,6 +66,9 @@ Rules: no `.env` in the image, secrets only at run time.
 
 ## Phase 2: Hardening
 
+- [ ] **Fix unit tests:** 10 of 13 suites fail before running with `Must use import to load ES Module: @nestjs/config` (`@nestjs/config` v12 is ESM, Jest loads CommonJS; Node 22.21). Found 2026-11-24.
+  - First try during Docker Lesson 7: a Node 24.9+ image may fix it (Jest can `require()` ESM there). Otherwise adjust Jest config (`transformIgnorePatterns` / transform).
+  - Must be green before Better Auth (big refactor) and before CI/CD in Phase 4.
 - [ ] Env validation: app refuses to start without `DB_*`, `JWT_SECRET`, `CORS_ORIGINS`
 - [ ] Global exception filter: consistent error shape, no stack traces
 - [ ] `GET /health`: no JWT guard, `@SkipThrottle()`
