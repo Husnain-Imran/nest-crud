@@ -1,0 +1,27 @@
+services:
+  db:
+    image: mysql:8.4
+    container_name: mysql-vol
+    ports:
+      - '3307:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  api:
+    build: .
+    container_name: peptidestock-app
+    ports:
+      - '9999:9999'
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+    depends_on:
+      - db
+volumes:
+  mysql_data:
+    external: true
